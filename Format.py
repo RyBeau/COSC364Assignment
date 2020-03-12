@@ -10,6 +10,7 @@ METRIC_SIZE = 32
 
 class Format:
     
+    
     #Return command as 8 bits
     def formatCommand(self, myCommand):
         command_bit = bin(myCommand)[2:]
@@ -78,6 +79,35 @@ class Format:
         #return True
     
     
+    
+    
+    def format_recev_addr_family_id(self, byte_list):
+        addr_family_id = ''
+        
+        addr_family_id += self.bitSizeCorrection(bin(byte_list[0]), 8)
+        addr_family_id += self.bitSizeCorrection(bin(byte_list[1]), 8)
+        
+        return int(addr_family_id, 2)
+    
+    
+    def format_recev_ip_addr(self, byte_list):
+        ip_addr = '{}.{}.{}.{}'.format(byte_list[0], byte_list[1], byte_list[2], byte_list[3])
+        
+        return ip_addr    
+    
+    
+    def format_recev_metric(self, byte_list):
+        metric = ''
+        
+        metric += self.bitSizeCorrection(bin(byte_list[0]), 8)
+        metric += self.bitSizeCorrection(bin(byte_list[1]), 8)
+        metric += self.bitSizeCorrection(bin(byte_list[2]), 8)
+        metric += self.bitSizeCorrection(bin(byte_list[3]), 8)
+        
+        return int(metric, 2)    
+    
+    
+    
     def bitSizeCorrection(self, myBits, size):
         myBits = myBits[2:]
         
@@ -96,8 +126,10 @@ class Format:
     
     
     
+    
+    
 
-f = Format()
+#f = Format()
 
-command = 2
-print(f.formatCommand(command))
+#command = 2
+#print(f.formatCommand(command))
