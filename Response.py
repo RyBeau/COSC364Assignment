@@ -14,24 +14,27 @@ class ResponseSend:
     command = 2
     version = 1
     
-    #This will be encapsulated inside 'bytes()' function
+    #This will be encapsulated inside 'bytearray()' function
     RIP_packet = []
     
     
     
-    def createRTE(r_table_RTE):
+    def createRTE(self, r_table_RTE):
         #r_table_RTE is tuple then split
         #then check if there are right number of splits
         
         #next assign each split to correct var
         
         #next format each split
+        
+        
+        #Return a bytearray()
         pass
 
 
     
     """Initial function to call"""
-    def makeResonse():
+    def makeResonse(self):
         #add command, version and zero field
         
         #get entire routing table
@@ -44,22 +47,23 @@ class ResponseSend:
 
 class ResponseReceive:
     
-    received_routingTable = []
+    received_RTEs = []
     
     
-    #add received RTE into 'received_routingTable'
+    """Add RTE into 'received_RTEs' list"""
     def append_RTE(self, my_Addr_family_id, my_temp_ip_addr, my_metric):
         
         my_RTE = tuple([my_Addr_family_id, my_temp_ip_addr, my_metric])
         
-        self.received_routingTable.append(my_RTE)
+        self.received_RTEs.append(my_RTE)
         
     
     
-    
+    """Read and extract the entire Response message"""
     def readResponse(self, myPacket):
         packet_size = len(myPacket) - 4
         
+        #get number of RTE's in packet
         try:
             RTE_total = int(packet_size / 20)
         
@@ -71,41 +75,63 @@ class ResponseReceive:
         version = myPacket[1]
         
         
-        
+        #pointer to 'Format' class
         f = Format.Format()
         
         
         #RTE's begin at index 4 of 'myPacket'
-        i = 4
-        j = 0
+        i = 4   # packet index
+        j = 0   # RTE count
         while j < RTE_total:
-            addr_family_id = f.format_recev_addr_family_id([myPacket[i], myPacket[i+1]])
-            ip_addr = f.format_recev_ip_addr([myPacket[i+4], myPacket[i+5], myPacket[i+6], myPacket[i+7]])
-            metric = f.format_recev_metric([myPacket[i+16], myPacket[i+17], myPacket[i+18], myPacket[i+19]])
             
+            #i is start of a RTE in packet
+            #f is points to 'Format' class
+            addr_family_id, ip_addr, metric = self.getRTE(myPacket, i, f)
             
             self.append_RTE(addr_family_id, ip_addr, metric)
             
             
-            i = 24
+            i = 24      # set i to 24 for the next RTE in packet
             j += 1
             
-            
-        return self.received_routingTable
+        
+        #return a list of RTE's
+        return self.received_RTEs
     
     
+    
+    """Decode and return a single RTE from packet"""
+    def getRTE(self, myPacket, RTE_index, f):
+        
+        i = RTE_index
+        
+        #Decode Address family identification from RTE
+        addr_family_id = f.format_recev_addr_family_id([myPacket[i], myPacket[i+1]])
+        
+        #Decode ip address from RTE
+        ip_addr = f.format_recev_ip_addr([myPacket[i+4], myPacket[i+5], myPacket[i+6], myPacket[i+7]])
+        
+        #Decode metric from RTE
+        metric = f.format_recev_metric([myPacket[i+16], myPacket[i+17], myPacket[i+18], myPacket[i+19]])
+        
+        
+        return addr_family_id, ip_addr, metric
     
 
+
+##Just tests
 
 #r = ResponseReceive()
 
 #routingTable = []
 
+##Header
 #command = int('00000010', 2)
 #version = int('00000001', 2)
 #zero1_16_1 = int('00000000', 2)
 #zero1_16_2 = int('00000000', 2)
 
+##RTE
 #addr_family_id_1 = int('00000000', 2)
 #addr_family_id_2 = int('00000010', 2)
 #zero2_16_1 = int('00000000', 2)
@@ -133,7 +159,7 @@ class ResponseReceive:
 
 
 
-#packet = bytearray(24)
+#packet = bytearray(44)
 
 
 #packet[0] = command
@@ -160,6 +186,28 @@ class ResponseReceive:
 #packet[21] = metric_2
 #packet[22] = metric_3
 #packet[23] = metric_4
+
+
+#packet[24] = addr_family_id_1
+#packet[25] = addr_family_id_2
+#packet[26] = zero2_16_1
+#packet[27] = zero2_16_2
+#packet[28] = ip1
+#packet[29] = ip2
+#packet[30] = ip3
+#packet[31] = ip4
+#packet[32] = zero1_32_1
+#packet[33] = zero1_32_2
+#packet[34] = zero1_32_3
+#packet[35] = zero1_32_4
+#packet[36] = zero2_32_1
+#packet[37] = zero2_32_2
+#packet[38] = zero2_32_3
+#packet[39] = zero2_32_4
+#packet[40] = metric_1
+#packet[41] = metric_2
+#packet[42] = metric_3
+#packet[43] = metric_4
 
 
 #print(r.readResponse(packet))
