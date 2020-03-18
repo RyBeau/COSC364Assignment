@@ -3,6 +3,7 @@ Router.py
 This is the router class for the COSC364 Assignment.
 Author: Ryan Beaumont
 """
+from RoutingTable import *
 from socket import*
 from os import _exit
 
@@ -14,12 +15,13 @@ def kill_router(code):
 
 class Router:
     def __init__(self, inputPorts, outputPorts):
+        """Initialises starting properties"""
         self.adHeaderLength = 20
         self.ripMaxLength = 520
         self.inputPorts = inputPorts
         self.outputPorts = outputPorts
         self.routerSockets = self.create_sockets()
-        self.routingTable = None #Needs to be implemented
+        self.routingTable = RoutingTable()
 
     def create_sockets(self):
         """This method creates each of the UDP for the input ports"""
