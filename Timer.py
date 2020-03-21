@@ -20,14 +20,34 @@ import threading
 """Maintains router and RTE timers"""
 class Timer:
     
-    last_routing_update_time = 0            # last time a routing update was sent(30 sec update)
-    next_available_triggerd_update = 0      # time when a triggerd update can be performed
+    next_routing_update_time = 0            # last time a routing update was sent(30 sec update)
+    next_triggerd_update = 0                # time when a triggerd update can be performed
     
     timeout_bin = []                        # list of RTE's timeout time
     garbage_bin = []                        # list of RTE's pending garbage collection
     
     
-
+    """Set 'next_routing_update_time' to when the next router update can be generated"""
+    def setNextRoutingUpdateTime(self):
+        min_margin = 0
+        max_margin = 5
+        
+        offset_time = self.getOffsetTime(min_margin, max_margin)        
+        
+        self.next_routing_update_time = getDeltaDateTime(30 + offset_time)
+    
+    
+    """Set 'next_triggerd_update' to when the next triggered update can be generated"""
+    def setNextTriggeredUpdateTime(self):
+        min_margin = 1
+        max_margin = 5
+        
+        offset_time = self.getOffsetTime(min_margin, max_margin)
+        
+        self.next_routing_update_time = getDeltaDateTime(offset_time)
+    
+    
+    
     
     """Check if a RTE in 'timeout_bin' list has reached it's 180 sec"""
     def checkTimeoutTimers(self):
@@ -73,7 +93,7 @@ class Timer:
                 
                 if (RTE_garbage_time <= self.getDateTime()):        # if RTE's garbage time has expired
                     self.collectGarbage(RTE_id)
-                    self.popGarbageBin(i)
+                    self.popGarbageBin(RTE_id)
                     
                     
                 i += 1
@@ -90,7 +110,7 @@ class Timer:
     
     
     """Return 'timeDelta' in 'datetime' syntax"""
-    def getIncrementDateTime(self, timeDelta):
+    def getDeltaDateTime(self, timeDelta):
         return datetime.timedelta(seconds = timeDelta)
     
     
@@ -98,13 +118,24 @@ class Timer:
     
     """Append new RTE to 'timeout_bin' list"""
     def addToTimeoutBin(self, RTE_id):
-        pass
+        RTE_timeout_time = self.getDateTime() + self.getDeltaDateTime(180)
+        timeout_RTE = tuple([RTE_id, RTE_timeout_time])
+        
+        self.timeout_bin.append(timeout_RTE)
     
     
     
     """Pop a RTE off the global 'timeout_bin' list"""
     def popTimeoutBin(self, RTE_id):
-        pass
+        
+        #enumerate() makes every tuple '(0, RTE tuple)'
+        RTE_index = [x for x, y in enumerate(self.timeout_bin) if y[0] == RTE_id]
+        
+        try:
+            self.timeout_bin.pop(RTE_index)
+            
+        except:
+            print("Problem finding RTE in 'timeout_bin'")
     
     
     
@@ -112,7 +143,7 @@ class Timer:
     """Append timed out RTE to global 'garbage_bin' list"""
     def addToGarbageBin(self, RTE_id):
         
-        RTE_garbage_timeout_time = self.getDateTime() + self.getIncrementDateTime(120)
+        RTE_garbage_timeout_time = self.getDateTime() + self.getDeltaDateTime(120)
         garbage_RTE = tuple([RTE_id, RTE_garbage_timeout_time])
         
         self.garbage_bin.append(garbage_RTE)
@@ -121,7 +152,15 @@ class Timer:
     
     """Pop a RTE off the global 'garbage_bin' list"""
     def popGarbageBin(self, RTE_id):
-        pass
+        
+        #enumerate() makes every tuple '(0, RTE tuple)'
+        RTE_index = [x for x, y in enumerate(self.garbage_bin) if y[0] == RTE_id]
+        
+        try:
+            self.garbage_bin.pop(RTE_index)
+            
+        except:
+            print("Problem finding RTE in 'garbage_bin'")
     
     
     
@@ -132,9 +171,9 @@ class Timer:
     
     
     
-    """Return a random time inteval between 1 to 5 sec inclusive"""
-    def getOffsetTime(self):
-        return random.randint(1, 5)
+    """Return a random time inteval from min_margin to max_margin in seconds"""
+    def getOffsetTime(self, min_margin, max_margin):
+        return random.randint(min_margin, max_margin)
     
     
 
