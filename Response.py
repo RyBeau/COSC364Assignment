@@ -1,50 +1,117 @@
 #import RoutingTable
 import Format
-
+import math
 #For unsolicited response and triggered updates caused by route change
 
 #Receiving responses, so reading, validating, and returning data to caller class
 
 """Form a response message packet and return a 'bytearray' of packet back to the caller"""
 class ResponseSend:
-    #<-----------------Need to consider mutliple packets-------------------->
-    
-    RTE_count = 0
     
     command = 2
     version = 1
+    must_be_zero = 0
     
-    #This will be encapsulated inside 'bytearray()' function
-    RIP_packet = []
+    f = Format.Format()
     
-    
-    
+    """Return a RTE in integer format"""
     def createRTE(self, r_table_RTE):
-        #r_table_RTE is tuple then split
-        #then check if there are right number of splits
+        f = self.f
         
-        #next assign each split to correct var
+        # Get list of each element for packet, e.g addr_family_id_list = [0, 1] for address family id = 1
+        addr_family_id_list = f.formatAddrFamilyID(RTE[])
+        must_be_zero16_list = f.formatMustBeZero16(0)
+        ip_addr_list = f.formatIP(RTE[])
+        must_be_zero32_list = f.formatMustBeZero32(0)
+        metric_list = f.formatMetric(RTE[])
         
-        #next format each split
+        
+        # Concatonate lists to a single list(The size of the list is constant)
+        RTE_byte_list = (addr_family_id_list + 
+                         must_be_zero16_list + 
+                         ip_addr_list + 
+                         must_be_zero32_list + 
+                         must_be_zero32_list + 
+                         metric_list)
         
         
-        #Return a bytearray()
-        pass
+        return RTE_byte_list
 
 
+
+    """Add RTE in packet form to packet. Returns packet & packet index(to keep track of what bytes are occupied in packet('byteArray')"""
+    def appendToPacket(self, packet, packet_index, RTE_byte_list):
+        
+        i = 0
+        while i < len(RTE_byte_list):
+            packet[packet_index] = RTE_byte_list[i]     # 'calculatePacketByteSize()' ensures no index range error
+            
+            packet_index += 1
+            i += 1        
+        
+        return packet, packet_index
     
-    """Initial function to call"""
+    
+    
+    """Calculate the size of packet depending on how many RTE's are in routing table, returns number of bytes"""
+    def calculatePacketByteSize(self, expected_num_packets, current_num_packets, RTE_total):
+        max_packet_byte_size = 504      # max number of bytes for a single packet
+        packet_header_size = 4          # packet header size(number of bytes)
+        RTE_size = 20                   # RTE size(number of bytes)
+        
+        packet_byte_size = packet_header_size + (RTE_total * RTE_size)
+        
+        if packet_byte_size > max_packet_byte_size:     # if true, means multiple packets will be generated
+            return max_packet_byte_size
+        
+        
+        return packet_byte_size
+    
+    
+    
+    """Initial function to call. Returns a list of packet/s depending on how many RTE's are in routing table"""
     def makeResonse(self):
-        #add command, version and zero field
+        #RTE_total = number of RTE's in 'RoutingTable' class
+        #routingTable = copy routing table form 'Routing Table' class
         
-        #get entire routing table
-        #then loop through routing table
-        # and call createRTE to create a single RTE to 'RIP_packet'
+        num_packets = math.ceil(float(RTE_total)/ float(max_num_packet_RTE))        # Number of packet required to send all RTE's
         
-        pass
+        packet_list = []        # List of packet/s to return
+        
+        
+        R_Table_index = 0          # indexing 'routingTable' list
+        while len(packet_list) < num_packets:
+            packet_byte_size = calculatePacketByteSize(num_packets, len(packet_list), RTE_total)
+            
+            packet = bytearray(packet_byte_size)
+            
+            #packet header
+            packet[0] = self.command
+            packet[1] = self.version
+            packet[2] = self.must_be_zero
+            packet[3] = self.must_be_zero
+            
+            
+            packet_index = 4
+            while packet_index < packet_byte_size:
+                RTE = routingTable[R_Table_index]
+                
+                RTE_byte_list = self.createRTE(RTE)
+                packet, packet_index = self.appendToPacket(packet, packet_index, RTE_byte_list)
+                
+                R_Table_index += 1
+                
+                
+            packet_list.append(packet)
+        
+        
+        return packet_list
+        
         
 
 
+
+"""Deal with handling a recieved packet. Returns a list of RTE's"""
 class ResponseReceive:
     
     received_RTEs = []
