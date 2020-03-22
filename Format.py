@@ -7,9 +7,7 @@ IP_SIZE = 32
 METRIC_SIZE = 32
 
 '''Format integer values to bits in string. Use "Format" class before concatenating a 32 bit line for "bytes()" representation.'''
-
 class Format:
-    
     
     #Return command as 8 bits
     def formatCommand(self, myCommand):
@@ -28,55 +26,77 @@ class Format:
         return version_bit
     
     
-    #Return must be zero as 16 bits
+    #Return must be zero as 8 bit int list
     def formatMustBeZero16(self, myMustZero):
         must_zero_bit = bin(myMustZero)[2:]
         must_zero_bit = self.bitSizeCorrection(must_zero_bit, MUST_BE_ZERO_16_SIZE)
         
-        return must_zero_bit
+        must_zero_list = []
+        
+        must_zero_list.append(int(must_zero_bit[:8], 2))
+        must_zero_list.append(int(must_zero_bit[8:], 2))
+        
+        return must_zero_list
     
     
-    #Return address family identifier as 16 bits
+    #Return address family identifier as 8 bit int list
     def formatAddrFamilyID(self, myAddrFamilyID):
         addr_fimily_id_bit = bin(myAddrFamilyID)[2:]
         addr_fimily_id_bit = self.bitSizeCorrection(addr_fimily_id_bit, ADDR_FAMILY_ID_SIZE)
         
-        return addr_fimily_id_bit
+        addr_fimily_id_list = []
+        
+        addr_fimily_id_list.append(int(addr_fimily_id_bit[:8], 2))
+        addr_fimily_id_list.append(int(addr_fimily_id_bit[8:], 2))
+        
+        return addr_fimily_id_list
     
     
-    #Return ip address as 32 bits
+    #Return ip address as 8 bit int list
     def formatIP(self, myIp):
         ip_bit = bin(myIp)[2:]
         ip_bit = self.bitSizeCorrection(ip_bit, IP_SIZE)
         
-        return ip_bit
+        ip_list = []
+        
+        ip_list.append(int(ip_bit[:8], 2))
+        ip_list.append(int(ip_bit[8:16], 2))
+        ip_list.append(int(ip_bit[16:24], 2))
+        ip_list.append(int(ip_bit[24:], 2))
+        
+        return ip_list
     
     
-    #Return must be zero as 32 bits
+    #Return must be zero as 8 bit int list
     def formatMustBeZero32(self, myMustZero):
         must_zero_bit = bin(myMustZero)[2:]
         must_zero_bit = self.bitSizeCorrection(must_zero_bit, MUST_BE_ZERO_32_SIZE)
         
-        return must_zero_bit
+        must_zero_list = []
+        
+        must_zero_list.append(int(must_zero_bit[:8], 2))
+        must_zero_list.append(int(must_zero_bit[8:16], 2))
+        must_zero_list.append(int(must_zero_bit[16:24], 2))
+        must_zero_list.append(int(must_zero_bit[24:], 2))
+        
+        return must_zero_list
     
     
-    #Return metric as 32 bits
+    #Return metric as 8 bit int list
     def formatMetric(self, myMetric):
         metric_bit = bin(myMetric)[2:]
         metric_bit = self.bitSizeCorrection(metric_bit, METRIC_SIZE)
         
-        return metric_bit
-    
-    
-    
-    
-    #def correctSize(self, myBits, size):
-        #myBits = myBits[2:]
+        metric_list = []
         
-        #if len(myBits) == size:
-            #return False
+        metric_list.append(int(metric_bit[:8], 2))
+        metric_list.append(int(metric_bit[8:16], 2))
+        metric_list.append(int(metric_bit[16:24], 2))
+        metric_list.append(int(metric_bit[24:], 2))
         
-        #return True
+        return metric_list
+    
+    
     
     
     
