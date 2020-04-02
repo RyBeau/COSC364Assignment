@@ -4,12 +4,14 @@ This is the router class for the COSC364 Assignment.
 Author: Ryan Beaumont
 """
 from RoutingTable import *
+from config import *
 from socket import*
 from os import _exit
-from config import *
 from select import *
 
+
 LOCALHOST = gethostname()
+
 
 def kill_router(code):
     """This procedure shuts down the router/ ends the program"""
@@ -21,6 +23,7 @@ class Router:
         """Initialises starting properties"""
         self.adHeaderLength = 20
         self.ripMaxLength = 520
+        self.router_id = router_id
         self.input_ports = input_ports
         self.output_ports = output_ports
         self.router_sockets = self.create_sockets()
@@ -52,9 +55,11 @@ class Router:
         """This method send a RIP message to the given address using the first socket
         in routerSockets"""
         try:
-            self.router_sockets[0].sendTo(address, message)
-        except:
-            print("Could not send message")
+            message_bytes = message[0] << 16 | message[1]
+            message_bytes = message_bytes.to_bytes(3, byteorder="big")
+            self.router_sockets[0].sendto(message_bytes, address)
+        except error:
+            print("Could not send message", error)
 
     def get_message(self, socket_number):
         """Gets the data received on a socket and the sending address"""
@@ -72,20 +77,27 @@ class Router:
 
     def update_routing_table(self, rip_entries):
         """This method will send the ripEntries through to the routing table"""
-        pass
+        self.routing_table.update(rip_entries)
 
 
 def main():
     filename = input("Enter the config filename: ")
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
-    print(router)
     while True:
-        ready_sockets, _, _ = select(router.router_sockets, [], [])
-        for ready_socket in ready_sockets:
-            message, address = router.get_message(router.router_sockets.index(ready_socket))
-            print(message)
-            print(address)
+        ready_sockets, _, _ = select(router.router_sockets, [], [], 3.0)
+        if len(ready_sockets) > 0:
+            for ready_socket in ready_sockets:
+                message, _ = router.get_message(router.router_sockets.index(ready_socket))
+                message = int.from_bytes(message, "big")
+                return_port = int((2**16-1) & message)
+                sending_router = int(message >> 16)
+                router.update_routing_table([(return_port, sending_router)])
+                print(router.routing_table)
+        else:
+            for i in range(0, len(router.output_ports)):
+                message = [router.router_id, router.input_ports[i]]
+                router.send_message(message, (LOCALHOST, router.output_ports[i][0]))
 
 
 main()

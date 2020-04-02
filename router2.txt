@@ -1,8 +1,8 @@
 #router id - unique int between 1 to 64000
-1
+2
 
 #input port - unique x 1023 < x < 64001
-input-ports 2001, 2002
+input-ports 3001, 3002
 
 #output port - format a-b-c, a = port, b = metric, c = router id
-output-ports 3001-1-2, 4001-1-3
+output-ports 2001-1-1, 4002-5-3
