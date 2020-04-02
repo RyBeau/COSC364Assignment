@@ -7,6 +7,7 @@ from RoutingTable import *
 from config import *
 from socket import*
 from os import _exit
+from sys import argv
 from select import *
 
 
@@ -81,7 +82,7 @@ class Router:
 
 
 def main():
-    filename = input("Enter the config filename: ")
+    filename = argv[1]
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
     while True:
