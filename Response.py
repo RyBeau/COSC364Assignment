@@ -1,4 +1,4 @@
-#import RoutingTable
+import RoutingTable
 import Format
 import math
 #For unsolicited response and triggered updates caused by route change
@@ -15,15 +15,15 @@ class ResponseSend:
     f = Format.Format()
     
     """Return a RTE in integer format"""
-    def createRTE(self, r_table_RTE):
+    def createRTE(self, ip_addr, metric):
         f = self.f
         
         # Get list of each element for packet, e.g addr_family_id_list = [0, 1] for address family id = 1
-        addr_family_id_list = f.formatAddrFamilyID(RTE[])
+        addr_family_id_list = f.formatAddrFamilyID(2)
         must_be_zero16_list = f.formatMustBeZero16(0)
-        ip_addr_list = f.formatIP(RTE[])
+        ip_addr_list = f.formatIP(ip_addr)
         must_be_zero32_list = f.formatMustBeZero32(0)
-        metric_list = f.formatMetric(RTE[])
+        metric_list = f.formatMetric(metric)
         
         
         # Concatonate lists to a single list(The size of the list is constant)
@@ -72,7 +72,7 @@ class ResponseSend:
     """Initial function to call. Returns a list of packet/s depending on how many RTE's are in routing table"""
     def makeResonse(self):
         #RTE_total = number of RTE's in 'RoutingTable' class
-        #routingTable = copy routing table form 'Routing Table' class
+        routingTable = RoutingTable.RoutingTable()
         
         num_packets = math.ceil(float(RTE_total)/ float(max_num_packet_RTE))        # Number of packet required to send all RTE's
         
@@ -93,10 +93,12 @@ class ResponseSend:
             
             
             packet_index = 4
-            while packet_index < packet_byte_size:
-                RTE = routingTable[R_Table_index]
+            
+            for ip_addr, metric in routingTable.table.items():
+                if (packet_index < packet_byte_size):       #when packet is at max size, break to start new packet
+                    break
                 
-                RTE_byte_list = self.createRTE(RTE)
+                RTE_byte_list = self.createRTE(ip_addr, metric)
                 packet, packet_index = self.appendToPacket(packet, packet_index, RTE_byte_list)
                 
                 R_Table_index += 1
@@ -184,6 +186,8 @@ class ResponseReceive:
         
         return addr_family_id, ip_addr, metric
     
+
+
 
 
 ##Just tests
