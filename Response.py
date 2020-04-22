@@ -1,11 +1,10 @@
 import RoutingTable
 import Format
 import math
-#For unsolicited response and triggered updates caused by route change
+#For regular 30 second response and triggered updates messages
 
-#Receiving responses, so reading, validating, and returning data to caller class
 
-"""Form a response message packet and return a 'bytearray' of packet back to the caller"""
+"""Form a response message packet and return a list of 'bytearray/s' s of packet back to the caller"""
 class ResponseSend:
     
     command = 2
@@ -13,6 +12,8 @@ class ResponseSend:
     must_be_zero = 0
     
     f = Format.Format()
+    
+    
     
     """Return a RTE in integer format"""
     def createRTE(self, ip_addr, metric):
@@ -39,6 +40,7 @@ class ResponseSend:
 
 
 
+
     """Add RTE in packet form to packet. Returns packet & packet index(to keep track of what bytes are occupied in packet('byteArray')"""
     def appendToPacket(self, packet, packet_index, RTE_byte_list):
         
@@ -50,6 +52,8 @@ class ResponseSend:
             i += 1        
         
         return packet, packet_index
+    
+    
     
     
     
@@ -69,17 +73,21 @@ class ResponseSend:
     
     
     
+    
+    
+    # THIS WILL NOW ONLY BE FOR THE 30 SECOND UPDATE PACKET
     """Initial function to call. Returns a list of packet/s depending on how many RTE's are in routing table"""
-    def makeResonse(self):
-        #RTE_total = number of RTE's in 'RoutingTable' class
-        routingTable = RoutingTable.RoutingTable()
+    def makeUnsolictedUpdate(self):
+        
+        routingTable = RoutingTable.RoutingTable().table
+        
+        RTE_total = len(routingTable)         # Number of RTE's in 'RoutingTable' class
         
         num_packets = math.ceil(float(RTE_total)/ float(max_num_packet_RTE))        # Number of packet required to send all RTE's
         
         packet_list = []        # List of packet/s to return
         
         
-        R_Table_index = 0          # indexing 'routingTable' list
         while len(packet_list) < num_packets:
             packet_byte_size = calculatePacketByteSize(num_packets, len(packet_list), RTE_total)
             
@@ -94,14 +102,13 @@ class ResponseSend:
             
             packet_index = 4
             
-            for ip_addr, metric in routingTable.table.items():
+            for ip_addr, metric, _ in routingTable.items():
                 if (packet_index < packet_byte_size):       #when packet is at max size, break to start new packet
                     break
                 
                 RTE_byte_list = self.createRTE(ip_addr, metric)
                 packet, packet_index = self.appendToPacket(packet, packet_index, RTE_byte_list)
                 
-                R_Table_index += 1
                 
                 
             packet_list.append(packet)
@@ -110,6 +117,66 @@ class ResponseSend:
         return packet_list
         
         
+        
+        
+        
+    
+        
+        
+        
+    #ONLY MAKES TRIGGERED UPDATES
+    def makeTriggeredUpdate(self):
+        
+        routingTable = RoutingTable.RoutingTable().table
+        
+        RTE_list = []
+        
+        # Get RTE's that have 'c' flag
+        for key, _, flag in routingTable.items():
+            if (flag == "c"):
+                RTE_list.append(key)
+                
+        
+        RTE_total = len(RTE_list)
+        num_packets = math.ceil(float(RTE_total)/ float(max_num_packet_RTE))        # Number of packet required to send all RTE's
+        
+        packet_list = []        # List of packet/s to return        
+        
+        
+        
+        while len(packet_list) < num_packets:
+            packet_byte_size = calculatePacketByteSize(num_packets, len(packet_list), RTE_total)
+            
+            packet = bytearray(packet_byte_size)
+        
+            #packet header
+            packet[0] = self.command
+            packet[1] = self.version
+            packet[2] = self.must_be_zero
+            packet[3] = self.must_be_zero
+            
+            packet_index = 4
+            
+            for RTE in RTE_list:
+                if (packet_index < packet_byte_size):       #when packet is at max size, break to start new packet
+                    break                
+                
+                ip_addr = RTE
+                metric = routingTable[RTE][0]
+                
+                RTE_byte_list = self.createRTE(ip_addr, metric)
+                packet, packet_index = self.appendToPacket(packet, packet_index, RTE_byte_list)
+                
+                
+            packet_list.append(packet)                
+        
+        
+        return packet_list
+        
+        
+
+
+
 
 
 
