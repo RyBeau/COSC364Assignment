@@ -5,7 +5,8 @@ Author: Ryan Beaumont
 """
 from RoutingTable import *
 from config import *
-from socket import*
+from Response import *
+from socket import *
 from os import _exit
 from sys import argv
 from select import *
@@ -26,9 +27,10 @@ class Router:
         self.ripMaxLength = 520
         self.router_id = router_id
         self.input_ports = input_ports
-        self.output_ports = output_ports
+        self.output_ports = self.initialise_output_ports(output_ports)
+        self.links = self.initialise_links()
         self.router_sockets = self.create_sockets()
-        self.routing_table = RoutingTable()
+        self.routing_table = RoutingTable.RoutingTable()
 
     def __str__(self):
         """This method returns a string detailing the input, output, socket and routing table of the router
@@ -38,6 +40,24 @@ class Router:
                                                                                             self.router_sockets,
                                                                                             self.routing_table.table)
 
+    def initialise_output_ports(self, output_ports):
+        """
+        Stores output ports as a (id, metric) pair in dict with key = port
+        """
+        initialised_ports = {}
+        for port in output_ports:
+            initialised_ports[port[0]] = (port[2], port[1])
+        return initialised_ports
+
+    def initialise_links(self):
+        links = {}
+        for port in self.input_ports:
+            links[port] = [None, None]
+        return links
+
+    def add_link(self, input_port, id, output_port):
+        self.links[input_port] = (id, output_port)
+
     def create_sockets(self):
         """This method creates each of the UDP for the input ports"""
         sockets = []
@@ -45,6 +65,7 @@ class Router:
             for port in self.input_ports:
                 sockets.append(socket(AF_INET, SOCK_DGRAM))
                 sockets[-1].bind((LOCALHOST, port))
+                sockets[-1].settimeout(5)
         except:
             print("Error could not open sockets")
             kill_router(1)
@@ -56,9 +77,7 @@ class Router:
         """This method send a RIP message to the given address using the first socket
         in routerSockets"""
         try:
-            message_bytes = message[0] << 16 | message[1]
-            message_bytes = message_bytes.to_bytes(3, byteorder="big")
-            self.router_sockets[port_to_use].sendto(message_bytes, address)
+            self.router_sockets[port_to_use].sendto(message, address)
         except error:
             print("Could not send message", error)
 
@@ -74,31 +93,50 @@ class Router:
     def get_routing_table(self, neighbour_to_send_to):
         """This method will return the rip entries to be sent in a message using neighbourToSendTo to implement
         split horizon poison reverse"""
-        pass
+        self.routing_table.get_entries(neighbour_to_send_to)
 
     def update_routing_table(self, rip_entries):
         """This method will send the ripEntries through to the routing table"""
         self.routing_table.update(rip_entries)
 
-
 def main():
     filename = argv[1]
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
+    print(router.output_ports)
+    response_decode = ResponseReceive()
     while True:
-        ready_sockets, _, _ = select(router.router_sockets, [], [], 3.0)
+        ready_sockets, _, timed_out = select(router.router_sockets, [], router.router_sockets)
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
-                message, _ = router.get_message(router.router_sockets.index(ready_socket))
-                message = int.from_bytes(message, "big")
-                return_port = int((2**16-1) & message)
-                sending_router = int(message >> 16)
-                router.update_routing_table([(return_port, sending_router)])
+                message, address = router.get_message(router.router_sockets.index(ready_socket))
+                rip_entries = response_decode.readResponse(message)
+                if router.links[ready_socket.getsockname()[1]] is None:
+                    router.add_link(ready_socket.getsockname()[1], None, address[1])
+                router.update_routing_table(rip_entries)
                 print(router.routing_table)
-        else:
-            for i in range(0, len(router.output_ports)):
-                message = [router.router_id, router.input_ports[i]]
-                router.send_message(message, (LOCALHOST, router.output_ports[i][0]), i)
+                print(router.links)
+        if timed_out > 0:
+            for timed_out_socket in timed_out:
+                print(timed_out_socket.getsockname()[1])
 
 
 main()
+
+"""
+Routing Loop Planning
+get filename
+read file
+create router
+start timers
+select
+on read ready
+    getMessage
+    decode message
+    update routing table
+    if link invalid send update
+on socket timeout
+    update routing table
+    configure message
+    send update
+"""
