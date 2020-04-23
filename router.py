@@ -10,6 +10,7 @@ from socket import *
 from os import _exit
 from sys import argv
 from select import *
+from time import *
 
 
 LOCALHOST = gethostname()
@@ -50,6 +51,9 @@ class Router:
         return initialised_ports
 
     def initialise_links(self):
+        """
+        input port = key, (id, output_port)
+        """
         links = {}
         for port in self.input_ports:
             links[port] = None
@@ -96,9 +100,9 @@ class Router:
         split horizon poison reverse"""
         self.routing_table.get_entries(neighbour_to_send_to)
 
-    def update_routing_table(self, rip_entries):
+    def update_routing_table(self, rip_entries, link_metric):
         """This method will send the ripEntries through to the routing table"""
-        self.routing_table.update(rip_entries)
+        self.routing_table.update(rip_entries, link_metric)
 
 def main():
     filename = argv[1]
@@ -106,21 +110,27 @@ def main():
     router = Router(router_id, input_ports, output_ports)
     response_encode = ResponseSend()
     response_decode = ResponseReceive()
+    start_time = int(time())
+    triggered_response_time = 10
     while True:
-        ready_sockets, _, _ = select(router.router_sockets, [], [], 10.0)
+        ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0)
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
                 message, address = router.get_message(router.router_sockets.index(ready_socket))
                 rip_entries = response_decode.readResponse(message)
                 if router.links[ready_socket.getsockname()[1]] is None:
                     router.add_link(ready_socket.getsockname()[1], None, address[1])
-                router.update_routing_table(rip_entries)
-        if False:
+                router.update_routing_table(rip_entries, router.output_ports[address[1]][1])
+                print(router.routing_table)
+        elif False:
             for timed_out_socket in timed_out:
                 timed_out_port = timed_out_socket.getsockname()[1]
                 if router.output_ports[timed_out_port][[0]] is not None:
                     router.routing_table.update_dead_link()
                     #Start garbage timer
+        elif time() - start_time >= triggered_response_time:
+            print("Send Update")
+            start_time = time()
         print("Hello World")
 
 
