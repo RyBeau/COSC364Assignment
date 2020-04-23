@@ -32,7 +32,8 @@ class RoutingTable:
             elif self.table[str(entry[0])][1] == entry[1] and entry[2] == 16:
                 self.table[str(entry[0])] = (entry[0], entry[1], entry[2], "c")
 
-
+    def get_entries(self):
+        return self.table.values()
 
 if __name__ == "__main__":
     routing_table = RoutingTable()
@@ -50,6 +51,8 @@ if __name__ == "__main__":
     test_entries3 = [(1, 3, 16), (4, 3, 16), (5, 3, 16)]
     routing_table.update(test_entries3)
     print(routing_table)
+    print("Get entries test")
+    print(routing_table.get_entries())
 """
 RoutingTable Planning
 
