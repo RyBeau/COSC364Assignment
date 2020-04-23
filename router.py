@@ -52,13 +52,13 @@ class Router:
             print("Sockets created on ports: {}".format(self.input_ports))
             return sockets
 
-    def send_message(self, message, address):
+    def send_message(self, message, address, port_to_use):
         """This method send a RIP message to the given address using the first socket
         in routerSockets"""
         try:
             message_bytes = message[0] << 16 | message[1]
             message_bytes = message_bytes.to_bytes(3, byteorder="big")
-            self.router_sockets[0].sendto(message_bytes, address)
+            self.router_sockets[port_to_use].sendto(message_bytes, address)
         except error:
             print("Could not send message", error)
 
@@ -98,7 +98,7 @@ def main():
         else:
             for i in range(0, len(router.output_ports)):
                 message = [router.router_id, router.input_ports[i]]
-                router.send_message(message, (LOCALHOST, router.output_ports[i][0]))
+                router.send_message(message, (LOCALHOST, router.output_ports[i][0]), i)
 
 
 main()
