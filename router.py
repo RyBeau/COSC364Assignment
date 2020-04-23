@@ -46,26 +46,27 @@ class Router:
         """
         initialised_ports = {}
         for port in output_ports:
-            initialised_ports[port[0]] = (port[2], port[1])
+            initialised_ports[port[0]] = [None, port[1]]
         return initialised_ports
 
     def initialise_links(self):
         links = {}
         for port in self.input_ports:
-            links[port] = [None, None]
+            links[port] = None
         return links
 
     def add_link(self, input_port, id, output_port):
         self.links[input_port] = (id, output_port)
+        self.output_ports[output_port][0] = id
 
     def create_sockets(self):
         """This method creates each of the UDP for the input ports"""
         sockets = []
+        setdefaulttimeout(5)
         try:
             for port in self.input_ports:
                 sockets.append(socket(AF_INET, SOCK_DGRAM))
                 sockets[-1].bind((LOCALHOST, port))
-                sockets[-1].settimeout(5)
         except:
             print("Error could not open sockets")
             kill_router(1)
@@ -103,10 +104,10 @@ def main():
     filename = argv[1]
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
-    print(router.output_ports)
+    response_encode = ResponseSend()
     response_decode = ResponseReceive()
     while True:
-        ready_sockets, _, timed_out = select(router.router_sockets, [], router.router_sockets)
+        ready_sockets, _, _ = select(router.router_sockets, [], [], 10.0)
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
                 message, address = router.get_message(router.router_sockets.index(ready_socket))
@@ -114,11 +115,13 @@ def main():
                 if router.links[ready_socket.getsockname()[1]] is None:
                     router.add_link(ready_socket.getsockname()[1], None, address[1])
                 router.update_routing_table(rip_entries)
-                print(router.routing_table)
-                print(router.links)
-        if timed_out > 0:
+        if False:
             for timed_out_socket in timed_out:
-                print(timed_out_socket.getsockname()[1])
+                timed_out_port = timed_out_socket.getsockname()[1]
+                if router.output_ports[timed_out_port][[0]] is not None:
+                    router.routing_table.update_dead_link()
+                    #Start garbage timer
+        print("Hello World")
 
 
 main()
