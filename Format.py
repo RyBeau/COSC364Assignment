@@ -104,8 +104,8 @@ class Format:
     def format_recev_addr_family_id(self, byte_list):
         addr_family_id = ''
         
-        addr_family_id += self.bitSizeCorrection(bin(byte_list[0]), 8)
-        addr_family_id += self.bitSizeCorrection(bin(byte_list[1]), 8)
+        addr_family_id += self.bitSizeCorrection(bin(byte_list[0])[2:], 8)
+        addr_family_id += self.bitSizeCorrection(bin(byte_list[1])[2:], 8)
         
         return int(addr_family_id, 2)
     
@@ -118,18 +118,18 @@ class Format:
     
     def format_recev_metric(self, byte_list):
         metric = ''
-        
-        metric += self.bitSizeCorrection(bin(byte_list[0]), 8)
-        metric += self.bitSizeCorrection(bin(byte_list[1]), 8)
-        metric += self.bitSizeCorrection(bin(byte_list[2]), 8)
-        metric += self.bitSizeCorrection(bin(byte_list[3]), 8)
+                
+        metric += self.bitSizeCorrection(bin(byte_list[0])[2:], 8)
+        metric += self.bitSizeCorrection(bin(byte_list[1])[2:], 8)
+        metric += self.bitSizeCorrection(bin(byte_list[2])[2:], 8)
+        metric += self.bitSizeCorrection(bin(byte_list[3])[2:], 8)
         
         return int(metric, 2)    
     
     
     
     def bitSizeCorrection(self, myBits, size):
-        myBits = myBits[2:]
+        myBits = myBits
         
         #maybe make a check it 'myBits' is larger than wanted 'size'
         # don't think it is needed
@@ -152,4 +152,4 @@ class Format:
 #f = Format()
 
 #command = 2
-#print(f.formatCommand(command))
+#print(f.formatAddrFamilyID(2))
