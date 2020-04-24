@@ -180,78 +180,71 @@ class ResponseSend:
 
 
 
-"""Deal with handling a recieved packet. Returns a list of RTE's"""
-class ResponseReceive:
+"""Pass a message received by neighbour in bytearray form to 'readResponse' to decode the message to retrieve the RTE/s"""
+class ResponseReceive():
     
-    received_RTEs = []
-    
-    
-    """Add RTE into 'received_RTEs' list"""
-    def append_RTE(self, my_Addr_family_id, my_temp_ip_addr, my_metric):
-        
-        my_RTE = tuple([my_Addr_family_id, my_temp_ip_addr, my_metric])
-        
-        self.received_RTEs.append(my_RTE)
-        
-    
-    
-    """Read and extract the entire Response message"""
-    def readResponse(self, myPacket):
-        packet_size = len(myPacket) - 4
-        
-        #get number of RTE's in packet
-        try:
-            RTE_total = int(packet_size / 20)
-        
-        except:
-            return "Response packet has missing data."
-        
-        
-        command = myPacket[0]
-        version = myPacket[1]
-        
-        
-        #pointer to 'Format' class
-        f = Format.Format()
-        
-        
-        #RTE's begin at index 4 of 'myPacket'
-        i = 4   # packet index
-        j = 0   # RTE count
-        while j < RTE_total:
-            
-            #i is start of a RTE in packet
-            #f is points to 'Format' class
-            addr_family_id, ip_addr, metric = self.getRTE(myPacket, i, f)
-            
-            self.append_RTE(addr_family_id, ip_addr, metric)
-            
-            
-            i = 24      # set i to 24 for the next RTE in packet
-            j += 1
-            
-        
-        #return a list of RTE's
-        return self.received_RTEs
-    
-    
-    
+
     """Decode and return a single RTE from packet"""
-    def getRTE(self, myPacket, RTE_index, f):
+    def decodeRTE(self, message, msg_index, f):
         
-        i = RTE_index
+        i = msg_index
         
         #Decode Address family identification from RTE
-        addr_family_id = f.format_recev_addr_family_id([myPacket[i], myPacket[i+1]])
+        addr_family_id = f.format_recev_addr_family_id([message[i], message[i+1]])
         
         #Decode ip address from RTE
-        ip_addr = f.format_recev_ip_addr([myPacket[i+4], myPacket[i+5], myPacket[i+6], myPacket[i+7]])
+        ip_addr = f.format_recev_ip_addr([message[i+4], message[i+5], message[i+6], message[i+7]])
         
         #Decode metric from RTE
-        metric = f.format_recev_metric([myPacket[i+16], myPacket[i+17], myPacket[i+18], myPacket[i+19]])
+        metric = f.format_recev_metric([message[i+16], message[i+17], message[i+18], message[i+19]])
         
         
         return addr_family_id, ip_addr, metric
+    
+    
+    
+    
+    # GUESSING THAT MESSAGE IS A 'BYTEARRAY'
+    """Read and extract the entire Response message"""
+    def readResponse(self, message):
+        
+        
+        packet_size = len(message) - 4      # Packet size minus the header(4 bytes)
+        RTE_size = 20                       # Each RTE is 20 bytes
+        
+        
+        try:                                # Get number of RTE's in packet
+            RTE_count = int(packet_size / RTE_size)
+        
+        except:
+            # Do something
+            pass
+        
+        
+        
+        f = Format.Format()
+        
+        
+        recv_RTE_list = []                  # All RTE's in message that have been read
+        
+        i = 4                               # packet index(Before index 4 is the header)
+        j = 0                               # RTE counter
+        while j < RTE_count:
+            
+            #i is start of a RTE in packet
+            #f is points to 'Format' class
+            addr_family_id, ip_addr, metric = self.decodeRTE(message, i, f)
+            
+            RTE = (addr_family_id, ip_addr, metric)
+            recv_RTE_list.append(RTE)
+            
+            
+            i += 20                         # Increments by 20 since a RTE has a size of 20 bytes
+            j += 1                          # Increment by 1 for every RTE in message read
+            
+        
+        
+        return recv_RTE_list                # return a list of RTE's in tuple(address-family-id, ip-address, metric)
     
 
 
