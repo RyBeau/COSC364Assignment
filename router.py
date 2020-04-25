@@ -112,6 +112,22 @@ def main():
     response_decode = ResponseReceive()
     start_time = int(time())
     triggered_response_time = 10
+    
+    
+    # For Timer
+    import Timer
+    from multiprocessing.pool import ThreadPool
+    timer = Timer.Timer()
+    
+    can_send_unsolicited = False
+    can_send_triggered = False
+    
+    pool = ThreadPool(processes=1)
+    async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
+    async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
+    # End of for Timer
+    
+    
     while True:
         ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0)
         if len(ready_sockets) > 0:
@@ -132,7 +148,32 @@ def main():
             print("Send Update")
             start_time = time()
         print("Hello World")
-
+        
+        
+        
+        
+        # For Timer
+        can_send_unsolicited = async_unsolicited_result.get()
+        can_send_triggered = async_triggered_result.get()
+        
+        if (can_send_unsolicited == True):
+            # Send unsolicited message by calling Response.unsolictedMessage()
+            
+            can_send_unsolicited = False
+            async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
+            
+        
+        if (can_send_triggered == True):
+            # Check for flagged RTE's if true then
+            # Send unsolicited message by calling Response.triggerdMessage(list of flagged RTE's in routing table)
+            
+            
+            # After making a triggered message set these 2 variables below else don't
+            #can_send_triggered = False
+            #async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
+            
+            pass
+        # End of for Timer
 
 main()
 
