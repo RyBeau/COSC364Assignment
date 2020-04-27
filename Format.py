@@ -3,7 +3,7 @@ VERSION_SIZE = 8
 MUST_BE_ZERO_16_SIZE = 16
 MUST_BE_ZERO_32_SIZE = 32
 ADDR_FAMILY_ID_SIZE = 16
-IP_SIZE = 32
+ID_SIZE = 32
 METRIC_SIZE = 32
 
 '''Format integer values to bits in string. Use "Format" class before concatenating a 32 bit line for "bytes()" representation.'''
@@ -53,18 +53,32 @@ class Format:
     
     
     #Return ip address as 8 bit int list
-    def formatIP(self, myIp):
-        ip_bit = bin(myIp)[2:]
-        ip_bit = self.bitSizeCorrection(ip_bit, IP_SIZE)
+    def formatID(self, myId):
+        id_bit = bin(myId)[2:]
+        id_bit = self.bitSizeCorrection(id_bit, ID_SIZE)
         
-        ip_list = []
+        id_list = []
         
-        ip_list.append(int(ip_bit[:8], 2))
-        ip_list.append(int(ip_bit[8:16], 2))
-        ip_list.append(int(ip_bit[16:24], 2))
-        ip_list.append(int(ip_bit[24:], 2))
+        id_list.append(int(id_bit[:8], 2))
+        id_list.append(int(id_bit[8:16], 2))
+        id_list.append(int(id_bit[16:24], 2))
+        id_list.append(int(id_bit[24:], 2))
         
-        return ip_list
+        return id_list
+    
+    
+    
+    def formatLocalID(self, myId):
+        id_bit = bin(myId)[2:]
+        id_bit = self.bitSizeCorrection(id_bit, 16)
+        
+        id_list = []
+        
+        id_list.append(int(id_bit[:8], 2))
+        id_list.append(int(id_bit[8:], 2))
+        
+        return id_list
+    
     
     
     #Return must be zero as 8 bit int list
@@ -110,10 +124,28 @@ class Format:
         return int(addr_family_id, 2)
     
     
-    def format_recev_ip_addr(self, byte_list):
-        ip_addr = '{}.{}.{}.{}'.format(byte_list[0], byte_list[1], byte_list[2], byte_list[3])
+    def format_recev_id(self, byte_list):
+        router_id = ""
         
-        return ip_addr    
+        router_id += self.bitSizeCorrection(bin(byte_list[0])[2:], 8)
+        router_id += self.bitSizeCorrection(bin(byte_list[1])[2:], 8)
+        router_id += self.bitSizeCorrection(bin(byte_list[2])[2:], 8)
+        router_id += self.bitSizeCorrection(bin(byte_list[3])[2:], 8)
+        
+        #router_id = '{}.{}.{}.{}'.format(byte_list[0], byte_list[1], byte_list[2], byte_list[3])
+        
+        return int(router_id, 2)
+    
+    
+    
+    def format_recev_advertising_id(self, byte_list):
+        router_id = ""
+        
+        router_id += self.bitSizeCorrection(bin(byte_list[0])[2:], 8)
+        router_id += self.bitSizeCorrection(bin(byte_list[1])[2:], 8)
+        
+        return int(router_id, 2)
+    
     
     
     def format_recev_metric(self, byte_list):
