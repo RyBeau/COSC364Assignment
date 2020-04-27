@@ -37,6 +37,7 @@ class RoutingTable:
         """
         receiving_neighbour, ID of router to apply split horizon poisoned reverse for.
         return entry format (destination_id, metric)
+        return entry type list
         """
         rip_entries = []
         for entry in self.table.values():
