@@ -26,27 +26,29 @@ class RoutingTable:
         (destination_id, metric)
         """
         for entry in rip_entries:
-            if not str(entry[0]) in self.table.keys() and entry[1] + link_metric < 16:
-                self.table[str(entry[0])] = (entry[0], next_hop_id, entry[1] + link_metric, "c")
-            elif self.table[str(entry[0])][2] > entry[1] + link_metric:
-                self.table[str(entry[0])] = (entry[0], next_hop_id, entry[1] + link_metric, "c")
-            elif self.table[str(entry[0])][1] == next_hop_id and entry[1] == 16:
-                self.table[str(entry[0])] = (entry[0], next_hop_id, entry[1], "d")
+            if not str(entry[1]) in self.table.keys() and entry[2] + link_metric < 16:
+                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "c")
+            elif self.table[str(entry[1])][2] > entry[2] + link_metric:
+                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "c")
+            elif self.table[str(entry[1])][1] == next_hop_id and entry[2] == 16:
+                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2], "d")
 
-    def get_entries(self, receiving_neighbour):
+    def get_entries(self, sending_router_id, receiving_neighbour=None):
         """
         receiving_neighbour, ID of router to apply split horizon poisoned reverse for.
         return entry format (destination_id, metric)
         return entry type list
+        Default parameter for initial message sending for unknown links
         """
-        rip_entries = []
-        for entry in self.table.values():
-            if entry[0] != receiving_neighbour:
-                if entry[1] == receiving_neighbour:
-                    rip_entries.append((entry[0], 16))
-                else:
-                    rip_entries.append((entry[0], entry[2]))
-        return rip_entries
+        rip_entries = [(sending_router_id, 0)]
+        if receiving_neighbour is not None:
+            for entry in self.table.values():
+                if entry[0] != receiving_neighbour:
+                    if entry[1] == receiving_neighbour:
+                        rip_entries.append((entry[0], 16))
+                    else:
+                        rip_entries.append((entry[0], entry[2]))
+            return rip_entries
 
     def update_dead_link(self, neighbour_id):
         """
@@ -68,18 +70,18 @@ if __name__ == "__main__":
     print("Intial Table:")
     print(routing_table)
     print("First Fill Test")
-    test_entries1 = [(1, 5), (3, 10), (4, 15), (5, 1)]
+    test_entries1 = [(None, 1, 5), (None, 3, 10), (None, 4, 15), (None, 5, 1)]
     routing_table.update(test_entries1, 2, 0)
     print(routing_table)
     print("Updating table Test")
-    test_entries2 = [(1, 1), (4, 10), (5, 5)]
+    test_entries2 = [(None, 1, 1), (None, 4, 10), (None,5, 5)]
     routing_table.update(test_entries2, 3, 0)
     print(routing_table)
     print("Set Unreachable Test")
-    test_entries3 = [(1, 16), (4, 16), (5, 16)]
+    test_entries3 = [(None, 1, 16), (None, 4, 16), (None, 5, 16)]
     routing_table.update(test_entries3, 3, 0)
     print(routing_table)
-    test_entries4 = [(1, 1), (4, 3)]
+    test_entries4 = [(None, 1, 1), (None, 4, 3)]
     routing_table.update(test_entries4, 3, 0)
     print(routing_table)
     print("Get entries test no SH needed")
