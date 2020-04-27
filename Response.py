@@ -7,12 +7,12 @@ import math
 class ResponseSend():
     
     command = 2
-    version = 1
-    must_be_zero = 0    
-    
+    version = 1    
     
     """30 second unsolicited message. Returns message/s of the entire routing table"""
-    def unsolictedMessage(self):
+    def unsolictedMessage(self, local_router_id):
+        f = Format.Format()
+        local_router_id_bytes = f.formatLocalID(local_router_id)        
         
         routingTable = RoutingTable.RoutingTable().table                            # The routing table(dictionary)
         #routingTable = {1234: (1, 2, 12, "c"), 5678: (5, 6, 1, "c")}
@@ -31,6 +31,7 @@ class ResponseSend():
         
         
         
+        
         while len(list_of_messages) < message_count:                                # Loop until all messages have been created
             message_byte_size, RTE_count = self.calculateMessageByteSize(RTE_count)        # Size of message in bytes
             
@@ -39,21 +40,22 @@ class ResponseSend():
             # Message header
             message[0] = self.command
             message[1] = self.version
-            message[2] = self.must_be_zero
-            message[3] = self.must_be_zero
+            
+            message[2] = local_router_id_bytes[0]
+            message[3] = local_router_id_bytes[1]
             
             
             message_index = 4                                                       # Begin at index 4 of message since first 3 index's are the message header
             
             
-            for ip_addr in routingTable:
-                metric = routingTable[ip_addr][2]
+            for router_id in routingTable:
+                metric = routingTable[router_id][2]
                 
                 if (message_index >= message_byte_size):                            # If message_index is out of range in message(bytearray) size
                     break                                                           # then break loop to start a new message
             
                 
-                RTE = self.encodeRTE(ip_addr, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
+                RTE = self.encodeRTE(router_id, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
                 message, message_index = self.addToMessage(message, message_index, RTE)
     
     
@@ -69,7 +71,9 @@ class ResponseSend():
 
 
     """Make a triggered message/s. Param flagged_RTE_list is a list of flagged("c") keys. Returns message/s in a list"""
-    def triggerdMessage(self, flagged_RTE_list):
+    def triggerdMessage(self, local_router_id, flagged_RTE_list):
+        f = Format.Format()
+        local_router_id_bytes = f.formatLocalID(local_router_id)
         
         routingTable = RoutingTable.RoutingTable().table
         #routingTable = {1234: (1, 2, 3, "c"), 5678: (5, 6, 7, "c")}                # just a test routing table
@@ -91,20 +95,21 @@ class ResponseSend():
             # Message header
             message[0] = self.command
             message[1] = self.version
-            message[2] = self.must_be_zero
-            message[3] = self.must_be_zero
+            
+            message[2] = local_router_id_bytes[0]
+            message[3] = local_router_id_bytes[1]
             
             
             message_index = 4                                                       # Begin at index 4 of message since first 3 index's are the message header
             
-            for ip_addr in flagged_RTE_list:
-                metric = routingTable[ip_addr][2]
+            for router_id in flagged_RTE_list:
+                metric = routingTable[router_id][2]
                 
                 if (message_index >= message_byte_size):                            # If message_index is out of range in message(bytearray) size
                     break                                                           # then break loop to start a new message
                 
                 
-                RTE = self.encodeRTE(ip_addr, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
+                RTE = self.encodeRTE(router_id, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
                 message, message_index = self.addToMessage(message, message_index, RTE)
                 
             
@@ -147,13 +152,13 @@ class ResponseSend():
     
     
     """Encode a single RTE, formatted to be added to the message"""
-    def encodeRTE(self, ip_addr, metric):
+    def encodeRTE(self, router_id, metric):
         f = Format.Format()
         
         # Each property is returned in a list, each value in the list represents a byte in the message(bytearray). e.g [1, 2], i=index(byte) in message, message[i] = 1 and message[i+1] = 2
         addr_family_id_list = f.formatAddrFamilyID(2)                               # Format addres-family-id property. Param is the property value to be formatted
         must_be_zero16_list = f.formatMustBeZero16(0)                               # Format must-be-zero(16 bits) property. Param is the property value to be formatted
-        ip_addr_list = f.formatIP(ip_addr)                                          # Format ip-address property. Param is the property value to be formatted
+        ip_addr_list = f.formatID(router_id)                                          # Format ip-address property. Param is the property value to be formatted
         must_be_zero32_list = f.formatMustBeZero32(0)                               # Format must-be-zero(32 bits) property. Param is the property value to be formatted
         metric_list = f.formatMetric(metric)                                        # Format metric property. Param is the property value to be formatted
         
@@ -203,13 +208,13 @@ class ResponseReceive():
         addr_family_id = f.format_recev_addr_family_id([message[i], message[i+1]])
         
         #Decode ip address from RTE
-        ip_addr = f.format_recev_ip_addr([message[i+4], message[i+5], message[i+6], message[i+7]])
+        router_id = f.format_recev_id([message[i+4], message[i+5], message[i+6], message[i+7]])
         
         #Decode metric from RTE
         metric = f.format_recev_metric([message[i+16], message[i+17], message[i+18], message[i+19]])
         
         
-        return addr_family_id, ip_addr, metric
+        return addr_family_id, router_id, metric
     
     
     
@@ -232,7 +237,13 @@ class ResponseReceive():
         
         
         
+        
         f = Format.Format()
+        
+        version = message[0]
+        command = message[1]
+        advertising_router_id = f.format_recev_advertising_id([message[2], message[3]])
+        
         
         
         recv_RTE_list = []                  # All RTE's in message that have been read
@@ -243,9 +254,9 @@ class ResponseReceive():
             
             #i is start of a RTE in packet
             #f is points to 'Format' class
-            addr_family_id, ip_addr, metric = self.decodeRTE(message, i, f)
+            addr_family_id, router_id, metric = self.decodeRTE(message, i, f)
             
-            RTE = (addr_family_id, ip_addr, metric)
+            RTE = (addr_family_id, router_id, metric)
             recv_RTE_list.append(RTE)
             
             
@@ -254,7 +265,7 @@ class ResponseReceive():
             
         
         
-        return recv_RTE_list                # return a list of RTE's in tuple(address-family-id, ip-address, metric)
+        return advertising_router_id, recv_RTE_list                # return a list of RTE's in tuple(address-family-id, ip-address, metric) and the advertising router's id
     
 
 
