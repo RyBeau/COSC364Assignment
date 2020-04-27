@@ -43,7 +43,7 @@ class Router:
 
     def initialise_output_ports(self, output_ports):
         """
-        Stores output ports as a (id, metric) pair in dict with key = port
+        Stores output ports as a (router_id, metric) pair in dict with key = port
         """
         initialised_ports = {}
         for port in output_ports:
@@ -98,11 +98,11 @@ class Router:
     def get_routing_table(self, neighbour_to_send_to):
         """This method will return the rip entries to be sent in a message using neighbourToSendTo to implement
         split horizon poison reverse"""
-        self.routing_table.get_entries(neighbour_to_send_to)
+        self.routing_table.get_entries(self.router_id, neighbour_to_send_to)
 
-    def update_routing_table(self, rip_entries, link_metric):
+    def update_routing_table(self, rip_entries, next_hop_router, output_port):
         """This method will send the ripEntries through to the routing table"""
-        self.routing_table.update(rip_entries, link_metric)
+        self.routing_table.update(rip_entries, next_hop_router, self.output_ports[output_port][1])
 
 def main():
     filename = argv[1]
@@ -126,17 +126,16 @@ def main():
     async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
     async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
     # End of for Timer
-    
-    
+
     while True:
         ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0)
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
                 message, address = router.get_message(router.router_sockets.index(ready_socket))
-                rip_entries = response_decode.readResponse(message)
+                advertising_router_id, rip_entries = response_decode.readResponse(message)
                 if router.links[ready_socket.getsockname()[1]] is None:
-                    router.add_link(ready_socket.getsockname()[1], None, address[1])
-                router.update_routing_table(rip_entries, router.output_ports[address[1]][1])
+                    router.add_link(ready_socket.getsockname()[1], advertising_router_id, address[1])
+                router.update_routing_table(rip_entries, advertising_router_id, address[1])
                 print(router.routing_table)
         elif False:
             for timed_out_socket in timed_out:
