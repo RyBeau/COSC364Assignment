@@ -7,6 +7,4 @@ COSC364 Rip routing assignment
   <li>Routing Table</li>
   <li>Response</li>
   <li>Timer</li>
-  <li>Advertisements</li>
-  <li>main</li>
 </ul
