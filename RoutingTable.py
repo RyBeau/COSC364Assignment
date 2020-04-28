@@ -48,7 +48,7 @@ class RoutingTable:
                         rip_entries.append((entry[0], 16))
                     else:
                         rip_entries.append((entry[0], entry[2]))
-            return rip_entries
+        return rip_entries
 
     def update_dead_link(self, neighbour_id):
         """
@@ -85,16 +85,17 @@ if __name__ == "__main__":
     routing_table.update(test_entries4, 3, 0)
     print(routing_table)
     print("Get entries test no SH needed")
-    print(routing_table.get_entries(5))
+    print(routing_table.get_entries(1, 5))
     print("Get entries test SH needed")
-    print(routing_table.get_entries(3))
+    print(routing_table.get_entries(1, 3))
     print(routing_table)
     print("Testing Marking dead links")
-    routing_table.update_dead_link(3)
+    routing_table.update_dead_link(1, 3)
     print(routing_table)
     print("Testing Removing dead links")
     routing_table.garbage_collection()
     print(routing_table)
+
 
 
 """
