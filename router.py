@@ -6,6 +6,8 @@ Author: Ryan Beaumont
 from RoutingTable import *
 from config import *
 from Response import *
+import Timer
+from multiprocessing.pool import ThreadPool
 from socket import *
 from os import _exit
 from sys import argv
@@ -31,7 +33,10 @@ class Router:
         self.output_ports = self.initialise_output_ports(output_ports)
         self.links = self.initialise_links()
         self.router_sockets = self.create_sockets()
-        self.routing_table = RoutingTable.RoutingTable()
+        self.routing_table = RoutingTable()
+        self.neighbour_death_time = 30
+        self.garbage_collection_time = 20
+        self.start_garbage_collection_time = None
 
     def __str__(self):
         """This method returns a string detailing the input, output, socket and routing table of the router
@@ -52,21 +57,59 @@ class Router:
 
     def initialise_links(self):
         """
-        input port = key, (id, output_port)
+        input port = key, (id, output_port, last_heard_from)
         """
         links = {}
         for port in self.input_ports:
-            links[port] = None
+            links[port] = []
         return links
 
     def add_link(self, input_port, id, output_port):
-        self.links[input_port] = (id, output_port)
+        """
+        router link holds the id, output_port and last heard from time related to the input port key
+        :param input_port: the input port that received the message
+        :param id: id of the sending router
+        :param output_port: output port router sent from
+        """
+        self.links[input_port] = [id, output_port, int(time())]
         self.output_ports[output_port][0] = id
+
+    def update_last_heard(self, input_port):
+        """
+        Update the last heard from time for a neighbour
+        :param input_port: the port of a receiving UDP socket.
+        """
+        self.links[input_port][2] = int(time())
+
+    def check_neighbour_alive(self):
+        """
+        Check if any router links have exceeded neighbour_death_time
+        """
+        neighbour_died = False
+        for key in self.links.keys():
+            if len(self.links[key]) > 0 and self.links[key][2] != "d":
+                current_time = int(time())
+                if current_time -self.links[key][2] >= self.neighbour_death_time:
+                    self.routing_table.update_dead_link(self.links[key][0])
+                    neighbour_died = True
+                    self.links[key][2] = "d"
+                    print("Router {} died".format(self.links[key][0]))
+        if neighbour_died:
+            self.start_garbage_collection_time = int(time())
+            print("Routing Table After Death:")
+            print(self.routing_table)
+
+    def check_garbage_collection(self):
+        if self.start_garbage_collection_time is not None:
+            current_time = int(time())
+            if current_time - self.start_garbage_collection_time >= self.garbage_collection_time:
+                self.routing_table.garbage_collection()
+                self.start_garbage_collection_time = None
+                print("Garbage Collection Completed")
 
     def create_sockets(self):
         """This method creates each of the UDP for the input ports"""
         sockets = []
-        setdefaulttimeout(5)
         try:
             for port in self.input_ports:
                 sockets.append(socket(AF_INET, SOCK_DGRAM))
@@ -78,20 +121,32 @@ class Router:
             print("Sockets created on ports: {}".format(self.input_ports))
             return sockets
 
-    def send_message(self, message, address, port_to_use):
-        """This method send a RIP message to the given address using the first socket
-        in routerSockets"""
-        try:
-            self.router_sockets[port_to_use].sendto(message, address)
-        except error:
-            print("Could not send message", error)
+    def send_message(self):
+        """This method send a RIP messages down each of the routers links. If possible applying split horizon poison
+        reverse to each of them"""
+        response_encode = ResponseSend()
+        link_keys = list(self.links.keys())
+        for i in range(len(link_keys)):
+            if len(self.links[link_keys[i]]) == 0:
+                output_port_keys = list(self.output_ports.keys())
+                rip_entries = self.routing_table.get_entries(self.router_id)
+                address = (LOCALHOST, int(output_port_keys[i]))
+            else:
+                rip_entries = self.routing_table.get_entries(self.router_id, self.links[link_keys[i]][0])
+                address = (LOCALHOST, self.links[link_keys[i]][1])
+            rip_message = response_encode.newMessage(self.router_id, rip_entries)[0]
+            try:
+                self.router_sockets[i].sendto(rip_message, address)
+            except error:
+                print("Could not send message", error)
+        print("Sent RIP Messages")
 
     def get_message(self, socket_number):
         """Gets the data received on a socket and the sending address"""
         try:
             message, address = self.router_sockets[socket_number].recvfrom(self.ripMaxLength)
         except:
-            print("Socket Timed Out")
+            print("Error Reading Socket")
         else:
             return message, address
 
@@ -104,21 +159,34 @@ class Router:
         """This method will send the ripEntries through to the routing table"""
         self.routing_table.update(rip_entries, next_hop_router, self.output_ports[output_port][1])
 
+
+def process_received(router, socket):
+    """
+    This function processes the data received from neighbour routing tables
+    :param router: the router class instance
+    :param socket: socket that has data ready to receive
+    """
+    response_decode = ResponseReceive()
+    message, address = router.get_message(router.router_sockets.index(socket))
+    advertising_router_id, rip_entries = response_decode.readResponse(message)
+    recv_sock_port = socket.getsockname()[1]
+    if len(router.links[recv_sock_port]) == 0:
+        router.add_link(recv_sock_port, advertising_router_id, address[1])
+    router.update_routing_table(rip_entries, advertising_router_id, address[1])
+    router.update_last_heard(recv_sock_port)
+    print(router.routing_table)
+
+
 def main():
+    #Initialisation of classes
     filename = argv[1]
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
-    response_encode = ResponseSend()
-    response_decode = ResponseReceive()
     start_time = int(time())
-    triggered_response_time = 10
-    
-    
+
+
     # For Timer
-    import Timer
-    from multiprocessing.pool import ThreadPool
     timer = Timer.Timer()
-    
     can_send_unsolicited = False
     can_send_triggered = False
     
@@ -127,52 +195,43 @@ def main():
     async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
     # End of for Timer
 
+    # First message to intialise with neighbours
+    router.send_message()
     while True:
         ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0)
+        # Process any sockets with received RIP messages
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
-                message, address = router.get_message(router.router_sockets.index(ready_socket))
-                advertising_router_id, rip_entries = response_decode.readResponse(message)
-                if router.links[ready_socket.getsockname()[1]] is None:
-                    router.add_link(ready_socket.getsockname()[1], advertising_router_id, address[1])
-                router.update_routing_table(rip_entries, advertising_router_id, address[1])
-                print(router.routing_table)
-        elif False:
-            for timed_out_socket in timed_out:
-                timed_out_port = timed_out_socket.getsockname()[1]
-                if router.output_ports[timed_out_port][[0]] is not None:
-                    router.routing_table.update_dead_link()
-                    #Start garbage timer
-        elif time() - start_time >= triggered_response_time:
-            print("Send Update")
-            start_time = time()
-        print("Hello World")
-        
-        
-        
-        
+                process_received(router, ready_socket)
+                print(router.links)
+        # Check if any links are dead
+        router.check_neighbour_alive()
+        # Check garbage collection
+        router.check_garbage_collection()
+        if int(time()) - start_time >= 10:
+            router.send_message()
+            start_time = int(time())
+        """
         # For Timer
         can_send_unsolicited = async_unsolicited_result.get()
         can_send_triggered = async_triggered_result.get()
         
-        if (can_send_unsolicited == True):
+        if can_send_unsolicited:
             # Send unsolicited message by calling Response.unsolictedMessage()
-            
+            router.send_message()
             can_send_unsolicited = False
             async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
-            
-        
-        if (can_send_triggered == True):
+        if can_send_triggered:
             # Check for flagged RTE's if true then
             # Send unsolicited message by calling Response.triggerdMessage(list of flagged RTE's in routing table)
-            
-            
+            router.send_message()
             # After making a triggered message set these 2 variables below else don't
             #can_send_triggered = False
             #async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
             
             pass
         # End of for Timer
+        """
 
 main()
 
