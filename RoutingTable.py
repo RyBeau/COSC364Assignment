@@ -8,8 +8,7 @@ class RoutingTable:
         """Initialise starting properties
         Table entry format (destination_id, next_hop_routerID, metric, flag)
         flag
-        'c' for change in RoutingTable
-        'u' for updated, when a triggered update is sent
+        "a" alive link
         "d" for dead link
         """
         self.table = {}
@@ -23,13 +22,15 @@ class RoutingTable:
     def update(self, rip_entries, next_hop_id, link_metric):
         """
         Expected RIP entry format
-        (destination_id, metric)
+        (addr_family, destination_id, metric)
         """
+        print("Updateing table with", next_hop_id)
         for entry in rip_entries:
-            if not str(entry[1]) in self.table.keys() and entry[2] + link_metric < 16:
-                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "c")
+            if str(entry[1]) not in self.table.keys():
+                if (entry[2] + link_metric) < 16:
+                    self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
             elif self.table[str(entry[1])][2] > entry[2] + link_metric:
-                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "c")
+                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
             elif self.table[str(entry[1])][1] == next_hop_id and entry[2] == 16:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2], "d")
 
@@ -48,7 +49,7 @@ class RoutingTable:
                         rip_entries.append((entry[0], 16))
                     else:
                         rip_entries.append((entry[0], entry[2]))
-            return rip_entries
+        return rip_entries
 
     def update_dead_link(self, neighbour_id):
         """
@@ -59,6 +60,9 @@ class RoutingTable:
                 self.table[str(entry[0])] = (entry[0], entry[1], 16, "d")
 
     def garbage_collection(self):
+        """
+        Removes any links marked for garbage collection
+        """
         keys = list(self.table.keys())
         for key in keys:
             if self.table[key][3] == "d":
@@ -85,16 +89,17 @@ if __name__ == "__main__":
     routing_table.update(test_entries4, 3, 0)
     print(routing_table)
     print("Get entries test no SH needed")
-    print(routing_table.get_entries(5))
+    print(routing_table.get_entries(1, 5))
     print("Get entries test SH needed")
-    print(routing_table.get_entries(3))
+    print(routing_table.get_entries(1, 3))
     print(routing_table)
     print("Testing Marking dead links")
-    routing_table.update_dead_link(3)
+    routing_table.update_dead_link(1, 3)
     print(routing_table)
     print("Testing Removing dead links")
     routing_table.garbage_collection()
     print(routing_table)
+
 
 
 """

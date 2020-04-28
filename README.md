@@ -8,3 +8,6 @@ COSC364 Rip routing assignment
   <li>Response</li>
   <li>Timer</li>
 </ul
+
+<h3>Running</h3>
+command line: python3 router.py {router config txt}
