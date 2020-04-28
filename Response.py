@@ -1,4 +1,4 @@
-import RoutingTable
+#import RoutingTable
 import Format
 import math
 #For regular 30 second response and triggered updates messages
@@ -9,16 +9,18 @@ class ResponseSend():
     command = 2
     version = 1    
     
-    """30 second unsolicited message. Returns message/s of the entire routing table"""
-    def unsolictedMessage(self, local_router_id):
+    
+    
+    
+    
+    """RTE_list = [(destination_id, metric)]"""
+    def newMessage(self, local_router_id, RTE_list):
         f = Format.Format()
         local_router_id_bytes = f.formatLocalID(local_router_id)        
-        
-        routingTable = RoutingTable.RoutingTable().table                            # The routing table(dictionary)
-        #routingTable = {1234: (1, 2, 12, "c"), 5678: (5, 6, 1, "c")}
-        
+    
+    
         max_RTE_in_message = 25                                                     # Max number of RTE's that can fit in a single message
-        RTE_count = len(routingTable)                                               # Number of RTE's in routing table
+        RTE_count = len(RTE_list)                                               # Number of RTE's in routing table
         message_count = 1 + (RTE_count // max_RTE_in_message)                       # Number of messages required to send entire routing table
         
         if RTE_count == 0:
@@ -27,8 +29,7 @@ class ResponseSend():
     
     
     
-        list_of_messages = []                                                       # Contains message/s in bytearray form that will be returned to the caller
-        
+        list_of_messages = []                                                       # Contains message/s in bytearray form that will be returned to the caller    
         
         
         
@@ -48,14 +49,12 @@ class ResponseSend():
             message_index = 4                                                       # Begin at index 4 of message since first 3 index's are the message header
             
             
-            for router_id in routingTable:
-                metric = routingTable[router_id][2]
-                
+            for destination_id, metric in RTE_list:
                 if (message_index >= message_byte_size):                            # If message_index is out of range in message(bytearray) size
                     break                                                           # then break loop to start a new message
             
                 
-                RTE = self.encodeRTE(router_id, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
+                RTE = self.encodeRTE(destination_id, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
                 message, message_index = self.addToMessage(message, message_index, RTE)
     
     
@@ -64,64 +63,127 @@ class ResponseSend():
 
 
         #end of while loop
-        return list_of_messages
-
-
-
-
-
-    """Make a triggered message/s. Param flagged_RTE_list is a list of flagged("c") keys. Returns message/s in a list"""
-    def triggerdMessage(self, local_router_id, flagged_RTE_list):
-        f = Format.Format()
-        local_router_id_bytes = f.formatLocalID(local_router_id)
+        return list_of_messages    
+    
+    
+    
+    
+    
+    
+    
+    #"""30 second unsolicited message. Returns message/s of the entire routing table"""
+    #def unsolictedMessage(self, local_router_id):
+        #f = Format.Format()
+        #local_router_id_bytes = f.formatLocalID(local_router_id)
         
-        routingTable = RoutingTable.RoutingTable().table
-        #routingTable = {1234: (1, 2, 3, "c"), 5678: (5, 6, 7, "c")}                # just a test routing table
+        #routingTable = RoutingTable.RoutingTable().table                            # The routing table(dictionary)
+        ##routingTable = {1234: (1, 2, 12, "c"), 5678: (5, 6, 1, "c")}
+        
+        #max_RTE_in_message = 25                                                     # Max number of RTE's that can fit in a single message
+        #RTE_count = len(routingTable)                                               # Number of RTE's in routing table
+        #message_count = 1 + (RTE_count // max_RTE_in_message)                       # Number of messages required to send entire routing table
+        
+        #if RTE_count == 0:
+            ## Do something
+            #pass
+    
+    
+    
+        #list_of_messages = []                                                       # Contains message/s in bytearray form that will be returned to the caller
         
         
-        max_RTE_in_message = 25                                                     # Max number of RTE's that can fit in a single message
-        RTE_count = len(routingTable)                                               # Number of RTE's in routing table
-        message_count = 1 + (RTE_count // max_RTE_in_message)                       # Number of messages required to send entire routing table
         
-        list_of_messages = []                                                       # Contains message/s in bytearray form that will be returned to the caller
         
-
-        
-        while len(list_of_messages) < message_count:                                # Loop until all messages have been created
-            message_byte_size, RTE_count = self.calculateMessageByteSize(RTE_count)        # Size of message in bytes
+        #while len(list_of_messages) < message_count:                                # Loop until all messages have been created
+            #message_byte_size, RTE_count = self.calculateMessageByteSize(RTE_count)        # Size of message in bytes
             
-            message = bytearray(message_byte_size)
+            #message = bytearray(message_byte_size)
             
-            # Message header
-            message[0] = self.command
-            message[1] = self.version
+            ## Message header
+            #message[0] = self.command
+            #message[1] = self.version
             
-            message[2] = local_router_id_bytes[0]
-            message[3] = local_router_id_bytes[1]
+            #message[2] = local_router_id_bytes[0]
+            #message[3] = local_router_id_bytes[1]
             
             
-            message_index = 4                                                       # Begin at index 4 of message since first 3 index's are the message header
+            #message_index = 4                                                       # Begin at index 4 of message since first 3 index's are the message header
             
-            for router_id in flagged_RTE_list:
-                metric = routingTable[router_id][2]
+            
+            #for router_id in routingTable:
+                #metric = routingTable[router_id][2]
                 
-                if (message_index >= message_byte_size):                            # If message_index is out of range in message(bytearray) size
-                    break                                                           # then break loop to start a new message
+                #if (message_index >= message_byte_size):                            # If message_index is out of range in message(bytearray) size
+                    #break                                                           # then break loop to start a new message
+            
+                
+                #RTE = self.encodeRTE(router_id, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
+                #message, message_index = self.addToMessage(message, message_index, RTE)
+    
+    
+            ## end of for loop
+            #list_of_messages.append(message)                                        # Append message(bytearray) to list_of_messages after message is encoded
+
+
+        ##end of while loop
+        #return list_of_messages
+
+
+
+
+
+    #"""Make a triggered message/s. Param flagged_RTE_list is a list of flagged("c") keys. Returns message/s in a list"""
+    #def triggerdMessage(self, local_router_id, flagged_RTE_list):
+        #f = Format.Format()
+        #local_router_id_bytes = f.formatLocalID(local_router_id)
+        
+        #routingTable = RoutingTable.RoutingTable().table
+        ##routingTable = {1234: (1, 2, 3, "c"), 5678: (5, 6, 7, "c")}                # just a test routing table
+        
+        
+        #max_RTE_in_message = 25                                                     # Max number of RTE's that can fit in a single message
+        #RTE_count = len(routingTable)                                               # Number of RTE's in routing table
+        #message_count = 1 + (RTE_count // max_RTE_in_message)                       # Number of messages required to send entire routing table
+        
+        #list_of_messages = []                                                       # Contains message/s in bytearray form that will be returned to the caller
+        
+
+        
+        #while len(list_of_messages) < message_count:                                # Loop until all messages have been created
+            #message_byte_size, RTE_count = self.calculateMessageByteSize(RTE_count)        # Size of message in bytes
+            
+            #message = bytearray(message_byte_size)
+            
+            ## Message header
+            #message[0] = self.command
+            #message[1] = self.version
+            
+            #message[2] = local_router_id_bytes[0]
+            #message[3] = local_router_id_bytes[1]
+            
+            
+            #message_index = 4                                                       # Begin at index 4 of message since first 3 index's are the message header
+            
+            #for router_id in flagged_RTE_list:
+                #metric = routingTable[router_id][2]
+                
+                #if (message_index >= message_byte_size):                            # If message_index is out of range in message(bytearray) size
+                    #break                                                           # then break loop to start a new message
                 
                 
-                RTE = self.encodeRTE(router_id, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
-                message, message_index = self.addToMessage(message, message_index, RTE)
+                #RTE = self.encodeRTE(router_id, metric)                               # Format the RTE to be appended to the message(bytearray) which is done on the next line
+                #message, message_index = self.addToMessage(message, message_index, RTE)
                 
             
-            # end of for loop
-            list_of_messages.append(message)                                        # Append message(bytearray) to list_of_messages after message is encoded
+            ## end of for loop
+            #list_of_messages.append(message)                                        # Append message(bytearray) to list_of_messages after message is encoded
 
 
-        #end of while loop
-        return list_of_messages            
+        ##end of while loop
+        #return list_of_messages            
         
         
-
+    
 
 
 
