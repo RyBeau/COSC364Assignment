@@ -59,6 +59,9 @@ class RoutingTable:
                 self.table[str(entry[0])] = (entry[0], entry[1], 16, "d")
 
     def garbage_collection(self):
+        """
+        Removes any links marked for garbage collection
+        """
         keys = list(self.table.keys())
         for key in keys:
             if self.table[key][3] == "d":
