@@ -8,8 +8,7 @@ class RoutingTable:
         """Initialise starting properties
         Table entry format (destination_id, next_hop_routerID, metric, flag)
         flag
-        'c' for change in RoutingTable
-        'u' for updated, when a triggered update is sent
+        "a" alive link
         "d" for dead link
         """
         self.table = {}
@@ -23,13 +22,15 @@ class RoutingTable:
     def update(self, rip_entries, next_hop_id, link_metric):
         """
         Expected RIP entry format
-        (destination_id, metric)
+        (addr_family, destination_id, metric)
         """
+        print("Updateing table with", next_hop_id)
         for entry in rip_entries:
-            if not str(entry[1]) in self.table.keys() and entry[2] + link_metric < 16:
-                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "c")
+            if str(entry[1]) not in self.table.keys():
+                if (entry[2] + link_metric) < 16:
+                    self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
             elif self.table[str(entry[1])][2] > entry[2] + link_metric:
-                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "c")
+                self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
             elif self.table[str(entry[1])][1] == next_hop_id and entry[2] == 16:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2], "d")
 
