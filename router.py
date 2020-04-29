@@ -16,6 +16,7 @@ from select import *
 from time import *
 
 
+
 LOCALHOST = gethostname()
 
 def kill_router(code):
@@ -35,13 +36,10 @@ class Router:
         self.router_sockets = self.create_sockets()
         self.routing_table = RoutingTable()
         self.neighbour_death_time = 30
-        self.garbage_collection_time = 20
-        self.start_garbage_collection_time = None
+        self.garbage_collection_time = float("inf")
         self.triggered_update = False
-        self.unsolicited_delay = None
         self.unsolicited_time = None
-        self.triggered_delay = None
-        self.triggered_time = None
+        self.triggered_time = float("inf")
         self.update_unsolicited()
 
     def __str__(self):
@@ -91,8 +89,8 @@ class Router:
         """
         Starts the garbage collection timer
         """
-        if self.start_garbage_collection_time is None:
-            self.start_garbage_collection_time = int(time())
+        if self.garbage_collection_time == float("inf"):
+            self.garbage_collection_time = int(time()) + 20
 
     def check_neighbour_alive(self):
         """
@@ -114,11 +112,11 @@ class Router:
             print(self.routing_table)
 
     def check_garbage_collection(self):
-        if self.start_garbage_collection_time is not None:
+        if self.garbage_collection_time is not None:
             current_time = int(time())
-            if current_time - self.start_garbage_collection_time >= self.garbage_collection_time:
+            if current_time >= self.garbage_collection_time:
                 self.routing_table.garbage_collection()
-                self.start_garbage_collection_time = None
+                self.garbage_collection_time = float("inf")
                 print("Garbage Collection Completed")
 
     def create_sockets(self):
@@ -153,6 +151,7 @@ class Router:
                 for rip_message in rip_messages:
                     self.router_sockets[i].sendto(rip_message, address)
                 self.triggered_update = False
+                self.triggered_time = float("inf")
             except error:
                 print("Could not send message:", error)
 
@@ -179,24 +178,29 @@ class Router:
 
     def can_send_unsolicited(self):
         """Checks if the router can send an unsolicited message"""
-        return int(time()) - self.unsolicited_time >= self.unsolicited_delay
+        return int(time()) >= self.unsolicited_time
 
     def update_unsolicited(self):
         """This method updates the timers for unsolicited messages"""
-        self.unsolicited_time = int(time())
-        self.unsolicited_delay = 10 * uniform(0.8, 1.2)
+        self.unsolicited_time = int(time()) + 10 * uniform(0.8, 1.2)
 
     def can_send_triggered(self):
         """Checks if the router can send a triggered message"""
-        if self.triggered_time is not None:
-            return self.triggered_update and int(time()) - self.triggered_time >= self.triggered_delay
+        if self.triggered_time != float("inf"):
+            return self.triggered_update and int(time()) >= self.triggered_time
         else:
             return False
 
     def update_triggered(self):
         """Updates the timers for triggered messages"""
-        self.triggered_delay = uniform(1, 5)
+        self.triggered_time = int(time()) + uniform(1, 5)
         self.triggered_update = True
+
+    def select_wait_time(self):
+        wait_time = min(self.unsolicited_time, self.garbage_collection_time, self.triggered_time) - int(time())
+        if wait_time < 0:
+            wait_time = 0
+        return wait_time
 
 
 def process_received(router, socket):
@@ -240,7 +244,7 @@ def main():
     # First message to initialise with neighbours
     router.send_message()
     while True:
-        ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0 * uniform(0.8, 1.2))
+        ready_sockets, _, _ = select(router.router_sockets, [], [], router.select_wait_time())
         # Process any sockets with received RIP messages
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
@@ -252,11 +256,11 @@ def main():
         router.check_garbage_collection()
 
         if router.can_send_unsolicited():
-            router.send_message()
             if router.triggered_update:
                 print("Sent Unsolicited Instead of Triggered")
             else:
                 print("Sent Unsolicited")
+            router.send_message()
             router.update_unsolicited()
 
         elif router.can_send_triggered():
