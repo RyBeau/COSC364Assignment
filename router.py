@@ -11,6 +11,7 @@ from multiprocessing.pool import ThreadPool
 from socket import *
 from os import _exit
 from sys import argv
+from random import uniform
 from select import *
 from time import *
 
@@ -37,6 +38,11 @@ class Router:
         self.garbage_collection_time = 20
         self.start_garbage_collection_time = None
         self.triggered_update = False
+        self.unsolicited_delay = None
+        self.unsolicited_time = None
+        self.triggered_delay = None
+        self.triggered_time = None
+        self.update_unsolicited()
 
     def __str__(self):
         """This method returns a string detailing the input, output, socket and routing table of the router
@@ -103,7 +109,7 @@ class Router:
                     print("Router {} died".format(self.links[key][0]))
         if neighbour_died:
             self.start_garbage_timer()
-            self.triggered_update = True
+            self.update_triggered()
             print("Routing Table After Death:")
             print(self.routing_table)
 
@@ -149,7 +155,6 @@ class Router:
                 self.triggered_update = False
             except error:
                 print("Could not send message:", error)
-        print("Sent RIP Messages")
 
     def get_message(self, socket_number):
         """Gets the data received on a socket and the sending address"""
@@ -167,7 +172,31 @@ class Router:
 
     def update_routing_table(self, rip_entries, next_hop_router, output_port):
         """This method will send the ripEntries through to the routing table"""
-        self.routing_table.update(rip_entries, next_hop_router, self.output_ports[output_port][1])
+        route_dead = self.routing_table.update(rip_entries, next_hop_router, self.output_ports[output_port][1])
+        if route_dead:
+            self.start_garbage_timer()
+            self.update_triggered()
+
+    def can_send_unsolicited(self):
+        """Checks if the router can send an unsolicited message"""
+        return int(time()) - self.unsolicited_time >= self.unsolicited_delay
+
+    def update_unsolicited(self):
+        """This method updates the timers for unsolicited messages"""
+        self.unsolicited_time = int(time())
+        self.unsolicited_delay = 10 * uniform(0.8, 1.2)
+
+    def can_send_triggered(self):
+        """Checks if the router can send a triggered message"""
+        if self.triggered_time is not None:
+            return self.triggered_update and int(time()) - self.triggered_time >= self.triggered_delay
+        else:
+            return False
+
+    def update_triggered(self):
+        """Updates the timers for triggered messages"""
+        self.triggered_delay = uniform(1, 5)
+        self.triggered_update = True
 
 
 def process_received(router, socket):
@@ -187,7 +216,7 @@ def process_received(router, socket):
     print(router.routing_table)
     if route_dead:
         router.start_garbage_timer()
-        router.triggered_update = True
+        router.update_triggered()
 
 
 
@@ -196,8 +225,8 @@ def main():
     filename = argv[1]
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
-    start_time = int(time())
 
+    """
     # For Timer
     timer = Timer.Timer()
     can_send_unsolicited = False
@@ -207,7 +236,7 @@ def main():
     async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
     async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
     # End of for Timer
-
+    """
     # First message to initialise with neighbours
     router.send_message()
     while True:
@@ -221,22 +250,34 @@ def main():
         router.check_neighbour_alive()
         # Check garbage collection
         router.check_garbage_collection()
-        """
-        if int(time()) - start_time >= 10:
+
+        if router.can_send_unsolicited():
             router.send_message()
-            start_time = int(time())
+            if router.triggered_update:
+                print("Sent Unsolicited Instead of Triggered")
+            else:
+                print("Sent Unsolicited")
+            router.update_unsolicited()
+
+        elif router.can_send_triggered():
+            router.send_message()
+            router.update_unsolicited()
+            print("Sent Triggered")
+        print("")
         """
 
         # For Timer
         can_send_unsolicited = async_unsolicited_result.get()
         can_send_triggered = async_triggered_result.get()
-        
+
+
         if can_send_unsolicited:
             # Send unsolicited message by calling Response.unsolictedMessage()
             router.send_message()
             can_send_unsolicited = False
             async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
 
+        
         if can_send_triggered:
             # Check for flagged RTE's if true then
             # Send unsolicited message by calling Response.triggerdMessage(list of flagged RTE's in routing table)
@@ -245,8 +286,7 @@ def main():
             can_send_triggered = False
             async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
             
-            pass
         # End of for Timer
-
+        """
 
 main()
