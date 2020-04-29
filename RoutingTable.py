@@ -24,6 +24,7 @@ class RoutingTable:
         Expected RIP entry format
         (addr_family, destination_id, metric)
         """
+        route_dead = False
         print("Updateing table with", next_hop_id)
         for entry in rip_entries:
             if str(entry[1]) not in self.table.keys():
@@ -33,6 +34,8 @@ class RoutingTable:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
             elif self.table[str(entry[1])][1] == next_hop_id and entry[2] == 16:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2], "d")
+                route_dead = True
+        return route_dead
 
     def get_entries(self, sending_router_id, receiving_neighbour=None):
         """
