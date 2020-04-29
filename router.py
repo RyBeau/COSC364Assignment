@@ -16,7 +16,6 @@ from time import *
 
 
 LOCALHOST = gethostname()
-print(LOCALHOST)
 
 def kill_router(code):
     """This procedure shuts down the router/ ends the program"""
