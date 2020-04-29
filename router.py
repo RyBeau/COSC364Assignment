@@ -182,10 +182,11 @@ def process_received(router, socket):
         router.add_link(recv_sock_port, advertising_router_id, address[1])
     route_dead = router.update_routing_table(rip_entries, advertising_router_id, address[1])
     router.update_last_heard(recv_sock_port)
+    print(router.routing_table)
     if route_dead:
         router.start_garbage_timer()
         router.send_message()
-    print(router.routing_table)
+
 
 
 def main():
