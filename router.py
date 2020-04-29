@@ -234,21 +234,3 @@ def main():
         """
 
 main()
-
-"""
-Routing Loop Planning
-get filename
-read file
-create router
-start timers
-select
-on read ready
-    getMessage
-    decode message
-    update routing table
-    if link invalid send update
-on socket timeout
-    update routing table
-    configure message
-    send update
-"""
