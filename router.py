@@ -141,9 +141,10 @@ class Router:
             else:
                 rip_entries = self.routing_table.get_entries(self.router_id, self.links[link_keys[i]][0])
                 address = (LOCALHOST, self.links[link_keys[i]][1])
-            rip_message = response_encode.newMessage(self.router_id, rip_entries)[0]
+            rip_messages = response_encode.newMessage(self.router_id, rip_entries)
             try:
-                self.router_sockets[i].sendto(rip_message, address)
+                for rip_message in rip_messages:
+                    self.router_sockets[i].sendto(rip_message, address)
             except error:
                 print("Could not send message:", error)
         print("Sent RIP Messages")
