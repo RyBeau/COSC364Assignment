@@ -81,6 +81,13 @@ class Router:
         """
         self.links[input_port][2] = int(time())
 
+    def start_garbage_timer(self):
+        """
+        Starts the garbage collection timer
+        """
+        if self.start_garbage_collection_time is None:
+            self.start_garbage_collection_time = int(time())
+
     def check_neighbour_alive(self):
         """
         Check if any router links have exceeded neighbour_death_time
@@ -95,7 +102,7 @@ class Router:
                     self.links[key][2] = "d"
                     print("Router {} died".format(self.links[key][0]))
         if neighbour_died:
-            self.start_garbage_collection_time = int(time())
+            self.start_garbage_timer()
             print("Routing Table After Death:")
             print(self.routing_table)
 
@@ -172,8 +179,10 @@ def process_received(router, socket):
     recv_sock_port = socket.getsockname()[1]
     if len(router.links[recv_sock_port]) == 0:
         router.add_link(recv_sock_port, advertising_router_id, address[1])
-    router.update_routing_table(rip_entries, advertising_router_id, address[1])
+    route_dead = router.update_routing_table(rip_entries, advertising_router_id, address[1])
     router.update_last_heard(recv_sock_port)
+    if route_dead:
+        router.start_garbage_collection_time =
     print(router.routing_table)
 
 
