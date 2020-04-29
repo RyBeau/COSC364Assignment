@@ -240,7 +240,7 @@ def main():
     # First message to initialise with neighbours
     router.send_message()
     while True:
-        ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0)
+        ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0 * uniform(0.8, 1.2))
         # Process any sockets with received RIP messages
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
