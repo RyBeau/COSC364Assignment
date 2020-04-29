@@ -121,8 +121,8 @@ class Router:
             for port in self.input_ports:
                 sockets.append(socket(AF_INET, SOCK_DGRAM))
                 sockets[-1].bind((LOCALHOST, port))
-        except:
-            print("Error could not open sockets")
+        except error:
+            print("Error could not open sockets:", error)
             kill_router(1)
         else:
             print("Sockets created on ports: {}".format(self.input_ports))
@@ -145,15 +145,15 @@ class Router:
             try:
                 self.router_sockets[i].sendto(rip_message, address)
             except error:
-                print("Could not send message", error)
+                print("Could not send message:", error)
         print("Sent RIP Messages")
 
     def get_message(self, socket_number):
         """Gets the data received on a socket and the sending address"""
         try:
             message, address = self.router_sockets[socket_number].recvfrom(self.ripMaxLength)
-        except:
-            print("Error Reading Socket")
+        except error:
+            print("Error Reading Socket:", error)
         else:
             return message, address
 
