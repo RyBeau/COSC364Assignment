@@ -99,21 +99,3 @@ if __name__ == "__main__":
     print("Testing Removing dead links")
     routing_table.garbage_collection()
     print(routing_table)
-
-
-
-"""
-RoutingTable Planning
-
-Print routing table
-
-Update routing table
-    for entry in entries
-        if router id not in table keys && entry metric < 16
-            table key = entry
-        else if table key metric > entry metric
-            table key = entry
-        else if entry metric = 16 && entry next hop = table next hop
-            table key metric = 16
-        
-"""
