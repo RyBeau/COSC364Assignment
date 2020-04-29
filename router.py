@@ -115,7 +115,7 @@ class Router:
                 print("Garbage Collection Completed")
 
     def create_sockets(self):
-        """This method creates each of the UDP for the input ports"""
+        """This method creates each of the UDP sockets for the input ports"""
         sockets = []
         try:
             for port in self.input_ports:
