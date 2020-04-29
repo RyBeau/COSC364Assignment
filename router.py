@@ -90,7 +90,7 @@ class Router:
         Starts the garbage collection timer
         """
         if self.garbage_collection_time == float("inf"):
-            self.garbage_collection_time = int(time()) + 20
+            self.garbage_collection_time = time() + 20
 
     def check_neighbour_alive(self):
         """
@@ -100,7 +100,7 @@ class Router:
         for key in self.links.keys():
             if len(self.links[key]) > 0 and self.links[key][2] != "d":
                 current_time = int(time())
-                if current_time -self.links[key][2] >= self.neighbour_death_time:
+                if current_time - self.links[key][2] >= self.neighbour_death_time:
                     self.routing_table.update_dead_link(self.links[key][0])
                     neighbour_died = True
                     self.links[key][2] = "d"
@@ -178,26 +178,26 @@ class Router:
 
     def can_send_unsolicited(self):
         """Checks if the router can send an unsolicited message"""
-        return int(time()) >= self.unsolicited_time
+        return time() >= self.unsolicited_time
 
     def update_unsolicited(self):
         """This method updates the timers for unsolicited messages"""
-        self.unsolicited_time = int(time()) + 10 * uniform(0.8, 1.2)
+        self.unsolicited_time = time() + 10 * uniform(0.8, 1.2)
 
     def can_send_triggered(self):
         """Checks if the router can send a triggered message"""
         if self.triggered_time != float("inf"):
-            return self.triggered_update and int(time()) >= self.triggered_time
+            return self.triggered_update and time() >= self.triggered_time
         else:
             return False
 
     def update_triggered(self):
         """Updates the timers for triggered messages"""
-        self.triggered_time = int(time()) + uniform(1, 5)
+        self.triggered_time = time() + uniform(1, 5)
         self.triggered_update = True
 
     def select_wait_time(self):
-        wait_time = min(self.unsolicited_time, self.garbage_collection_time, self.triggered_time) - int(time())
+        wait_time = min(self.unsolicited_time, self.garbage_collection_time, self.triggered_time) - time()
         if wait_time < 0:
             wait_time = 0
         return wait_time
