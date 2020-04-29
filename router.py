@@ -16,7 +16,7 @@ from time import *
 
 
 LOCALHOST = gethostname()
-
+print(LOCALHOST)
 
 def kill_router(code):
     """This procedure shuts down the router/ ends the program"""
@@ -37,6 +37,7 @@ class Router:
         self.neighbour_death_time = 30
         self.garbage_collection_time = 20
         self.start_garbage_collection_time = None
+        self.triggered_update = False
 
     def __str__(self):
         """This method returns a string detailing the input, output, socket and routing table of the router
@@ -103,6 +104,7 @@ class Router:
                     print("Router {} died".format(self.links[key][0]))
         if neighbour_died:
             self.start_garbage_timer()
+            self.triggered_update = True
             print("Routing Table After Death:")
             print(self.routing_table)
 
@@ -145,6 +147,7 @@ class Router:
             try:
                 for rip_message in rip_messages:
                     self.router_sockets[i].sendto(rip_message, address)
+                self.triggered_update = False
             except error:
                 print("Could not send message:", error)
         print("Sent RIP Messages")
@@ -185,17 +188,16 @@ def process_received(router, socket):
     print(router.routing_table)
     if route_dead:
         router.start_garbage_timer()
-        router.send_message()
+        router.triggered_update = True
 
 
 
 def main():
-    #Initialisation of classes
+    # Initialisation of classes
     filename = argv[1]
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
     start_time = int(time())
-
 
     # For Timer
     timer = Timer.Timer()
@@ -207,7 +209,7 @@ def main():
     async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
     # End of for Timer
 
-    # First message to intialise with neighbours
+    # First message to initialise with neighbours
     router.send_message()
     while True:
         ready_sockets, _, _ = select(router.router_sockets, [], [], 5.0)
@@ -220,10 +222,12 @@ def main():
         router.check_neighbour_alive()
         # Check garbage collection
         router.check_garbage_collection()
+        """
         if int(time()) - start_time >= 10:
             router.send_message()
             start_time = int(time())
         """
+
         # For Timer
         can_send_unsolicited = async_unsolicited_result.get()
         can_send_triggered = async_triggered_result.get()
@@ -233,16 +237,17 @@ def main():
             router.send_message()
             can_send_unsolicited = False
             async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
+
         if can_send_triggered:
             # Check for flagged RTE's if true then
             # Send unsolicited message by calling Response.triggerdMessage(list of flagged RTE's in routing table)
             router.send_message()
             # After making a triggered message set these 2 variables below else don't
-            #can_send_triggered = False
-            #async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
+            can_send_triggered = False
+            async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
             
             pass
         # End of for Timer
-        """
+
 
 main()
