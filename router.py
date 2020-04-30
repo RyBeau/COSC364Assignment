@@ -108,8 +108,6 @@ class Router:
         if neighbour_died:
             self.start_garbage_timer()
             self.update_triggered()
-            print("Routing Table After Death:")
-            print(self.routing_table)
 
     def check_garbage_collection(self):
         if self.garbage_collection_time is not None:
@@ -117,7 +115,7 @@ class Router:
             if current_time >= self.garbage_collection_time:
                 self.routing_table.garbage_collection()
                 self.garbage_collection_time = float("inf")
-                print("Garbage Collection Completed")
+
 
     def create_sockets(self):
         """This method creates each of the UDP sockets for the input ports"""
@@ -130,7 +128,7 @@ class Router:
             print("Error could not open sockets:", error)
             kill_router(1)
         else:
-            print("Sockets created on ports: {}".format(self.input_ports))
+            print("Sockets created on ports: {}\n".format(self.input_ports))
             return sockets
 
     def send_message(self):
@@ -202,6 +200,10 @@ class Router:
             wait_time = 0
         return wait_time
 
+    def print_links(self):
+        print("Direct Link Information:")
+        print(self.links, "\n")
+
 
 def process_received(router, socket):
     """
@@ -217,10 +219,10 @@ def process_received(router, socket):
         router.add_link(recv_sock_port, advertising_router_id, address[1])
     route_dead = router.update_routing_table(rip_entries, advertising_router_id, address[1])
     router.update_last_heard(recv_sock_port)
-    print(router.routing_table)
     if route_dead:
         router.start_garbage_timer()
         router.update_triggered()
+    router.print_links()
 
 
 
@@ -230,17 +232,6 @@ def main():
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
 
-    """
-    # For Timer
-    timer = Timer.Timer()
-    can_send_unsolicited = False
-    can_send_triggered = False
-    
-    pool = ThreadPool(processes=1)
-    async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
-    async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
-    # End of for Timer
-    """
     # First message to initialise with neighbours
     router.send_message()
     while True:
@@ -249,7 +240,6 @@ def main():
         if len(ready_sockets) > 0:
             for ready_socket in ready_sockets:
                 process_received(router, ready_socket)
-                print(router.links)
         # Check if any links are dead
         router.check_neighbour_alive()
         # Check garbage collection
@@ -257,40 +247,15 @@ def main():
 
         if router.can_send_unsolicited():
             if router.triggered_update:
-                print("Sent Unsolicited Instead of Triggered")
+                print("Sent Unsolicited Instead of Triggered\n")
             else:
-                print("Sent Unsolicited")
+                print("Sent Unsolicited\n")
             router.send_message()
             router.update_unsolicited()
 
         elif router.can_send_triggered():
             router.send_message()
             router.update_unsolicited()
-            print("Sent Triggered")
-        print("")
-        """
-
-        # For Timer
-        can_send_unsolicited = async_unsolicited_result.get()
-        can_send_triggered = async_triggered_result.get()
-
-
-        if can_send_unsolicited:
-            # Send unsolicited message by calling Response.unsolictedMessage()
-            router.send_message()
-            can_send_unsolicited = False
-            async_unsolicited_result = pool.apply_async(timer.unsolisotedMessageTimer)
-
-        
-        if can_send_triggered:
-            # Check for flagged RTE's if true then
-            # Send unsolicited message by calling Response.triggerdMessage(list of flagged RTE's in routing table)
-            router.send_message()
-            # After making a triggered message set these 2 variables below else don't
-            can_send_triggered = False
-            async_triggered_result = pool.apply_async(timer.triggeredMessageTimer)
-            
-        # End of for Timer
-        """
+            print("Sent Triggered\n")
 
 main()

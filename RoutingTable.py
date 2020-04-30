@@ -19,24 +19,37 @@ class RoutingTable:
             table_string += "{}: Next Hop ID {}, Metric: {}, Flag {}\n".format(key, self.table[key][1], self.table[key][2], self.table[key][3])
         return "Routing Table\n" + table_string
 
+    def display_table_changes(self, route_dead, table_changed, change_cause):
+        if route_dead:
+            print("Route Has Died")
+        if table_changed:
+            print("Change Caused By: " + change_cause)
+            print(self)
+
+
     def update(self, rip_entries, next_hop_id, link_metric):
         """
         Expected RIP entry format
         (addr_family, destination_id, metric)
         """
         route_dead = False
-        print("Updating table with Message from: ", next_hop_id)
+        table_changed = False
         for entry in rip_entries:
             if str(entry[1]) not in self.table.keys():
                 if (entry[2] + link_metric) < 16:
                     self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
+                    table_changed = True
             elif self.table[str(entry[1])][2] > entry[2] + link_metric:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
+                table_changed = True
             elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric < 16:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
+                table_changed = True
             elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric >= 16:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, 16, "d")
+                table_changed = True
                 route_dead = True
+        self.display_table_changes(route_dead, table_changed, str(next_hop_id))
         return route_dead
 
     def get_entries(self, sending_router_id, receiving_neighbour=None):
@@ -63,6 +76,7 @@ class RoutingTable:
         for entry in self.table.values():
             if entry[1] == neighbour_id:
                 self.table[str(entry[0])] = (entry[0], entry[1], 16, "d")
+        self.display_table_changes(True, True, "Neighbour {} died". format(neighbour_id))
 
     def garbage_collection(self):
         """
@@ -72,6 +86,8 @@ class RoutingTable:
         for key in keys:
             if self.table[key][3] == "d":
                 del self.table[key]
+        print("Garbage Collection Completed")
+        print(self)
 
 
 if __name__ == "__main__":
