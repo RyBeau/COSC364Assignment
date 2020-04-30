@@ -26,7 +26,6 @@ class RoutingTable:
             print("Change Caused By: " + change_cause)
             print(self)
 
-
     def update(self, rip_entries, next_hop_id, link_metric):
         """
         Expected RIP entry format
@@ -42,10 +41,12 @@ class RoutingTable:
             elif self.table[str(entry[1])][2] > entry[2] + link_metric:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
                 table_changed = True
-            elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric != self.table[str(entry[1])][2]:
+            elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric != self.table[str(entry[1])][2] \
+                    and entry[2] + link_metric < 16:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
                 table_changed = True
-            elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric >= 16:
+            elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric >= 16 \
+                    and self.table[str(entry[1])][3] != "d":
                 self.table[str(entry[1])] = (entry[1], next_hop_id, 16, "d")
                 table_changed = True
                 route_dead = True

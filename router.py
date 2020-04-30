@@ -77,6 +77,7 @@ class Router:
         """
         self.links[input_port] = [id, output_port, int(time())]
         self.output_ports[output_port][0] = id
+        self.print_links()
 
     def update_last_heard(self, input_port):
         """
@@ -104,10 +105,10 @@ class Router:
                     self.routing_table.update_dead_link(self.links[key][0])
                     neighbour_died = True
                     self.links[key][2] = "d"
-                    print("Router {} died".format(self.links[key][0]))
         if neighbour_died:
             self.start_garbage_timer()
             self.update_triggered()
+            self.print_links()
 
     def check_garbage_collection(self):
         if self.garbage_collection_time is not None:
@@ -222,7 +223,6 @@ def process_received(router, socket):
     if route_dead:
         router.start_garbage_timer()
         router.update_triggered()
-    router.print_links()
 
 
 
