@@ -117,7 +117,6 @@ class Router:
                 self.routing_table.garbage_collection()
                 self.garbage_collection_time = float("inf")
 
-
     def create_sockets(self):
         """This method creates each of the UDP sockets for the input ports"""
         sockets = []
