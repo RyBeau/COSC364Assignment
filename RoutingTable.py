@@ -14,12 +14,14 @@ class RoutingTable:
         self.table = {}
 
     def __str__(self):
+        """Print format for the Routing Table class"""
         table_string = ""
         for key in self.table.keys():
             table_string += "{}: Next Hop ID {}, Metric: {}, Flag {}\n".format(key, self.table[key][1], self.table[key][2], self.table[key][3])
         return "Routing Table\n" + table_string
 
     def display_table_changes(self, route_dead, table_changed, change_cause):
+        """Prints out the routing table if a change has occurred"""
         if route_dead:
             print("Route Has Died")
         if table_changed:

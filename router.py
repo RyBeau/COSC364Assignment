@@ -112,6 +112,7 @@ class Router:
             self.print_links()
 
     def check_garbage_collection(self):
+        """Checks if it is time to execute garbage collection"""
         if self.garbage_collection_time is not None:
             current_time = int(time())
             if current_time >= self.garbage_collection_time:
@@ -196,12 +197,14 @@ class Router:
         self.triggered_update = True
 
     def select_wait_time(self):
+        """Calculates the next timeout period for the select call"""
         wait_time = min(self.unsolicited_time, self.garbage_collection_time, self.triggered_time) - time()
         if wait_time < 0:
             wait_time = 0
         return wait_time
 
     def print_links(self):
+        """Prints the direct router links and information associated"""
         print("Direct Link Information:")
         print(self.links, "\n")
 
