@@ -42,7 +42,7 @@ class RoutingTable:
             elif self.table[str(entry[1])][2] > entry[2] + link_metric:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
                 table_changed = True
-            elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric < 16:
+            elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric != self.table[str(entry[1])][2]:
                 self.table[str(entry[1])] = (entry[1], next_hop_id, entry[2] + link_metric, "a")
                 table_changed = True
             elif self.table[str(entry[1])][1] == next_hop_id and entry[2] + link_metric >= 16:
