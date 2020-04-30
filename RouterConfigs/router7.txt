@@ -1,0 +1,8 @@
+#router id - unique int between 1 to 64000
+7
+
+#input port - unique x 1023 < x < 64001
+input-ports 8001, 8002
+
+#output port - format a-b-c, a = port, b = metric, c = router id
+output-ports 2003-8-1, 5002-6-4
