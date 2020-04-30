@@ -115,13 +115,24 @@ class Format:
     
     
     
+    
+    
     def format_recev_addr_family_id(self, byte_list):
         addr_family_id = ''
         
         addr_family_id += self.bitSizeCorrection(bin(byte_list[0])[2:], 8)
         addr_family_id += self.bitSizeCorrection(bin(byte_list[1])[2:], 8)
         
-        return int(addr_family_id, 2)
+        addr_family_id = int(addr_family_id, 2)
+        
+        
+        if (addr_family_id < 1) or (addr_family_id > 15):
+            print("Address family id value is out of the expected range.")
+            return None
+        
+        
+        return addr_family_id
+    
     
     
     def format_recev_id(self, byte_list):
@@ -132,9 +143,15 @@ class Format:
         router_id += self.bitSizeCorrection(bin(byte_list[2])[2:], 8)
         router_id += self.bitSizeCorrection(bin(byte_list[3])[2:], 8)
         
-        #router_id = '{}.{}.{}.{}'.format(byte_list[0], byte_list[1], byte_list[2], byte_list[3])
+        router_id = int(router_id, 2)
         
-        return int(router_id, 2)
+        
+        if (router_id < 1) or (router_id > 64000):
+            print("Router id value is out of the expected range.")
+            return None
+        
+        
+        return router_id
     
     
     
@@ -144,7 +161,15 @@ class Format:
         router_id += self.bitSizeCorrection(bin(byte_list[0])[2:], 8)
         router_id += self.bitSizeCorrection(bin(byte_list[1])[2:], 8)
         
-        return int(router_id, 2)
+        router_id = int(router_id, 2)
+        
+        
+        if (router_id < 1) or (router_id > 64000):
+            print("Advertising router id value is out of the expected range.")
+            return None
+        
+        
+        return router_id
     
     
     
@@ -156,7 +181,22 @@ class Format:
         metric += self.bitSizeCorrection(bin(byte_list[2])[2:], 8)
         metric += self.bitSizeCorrection(bin(byte_list[3])[2:], 8)
         
-        return int(metric, 2)    
+        metric = int(metric, 2)
+        
+        
+        if (metric < 0) or (metric > 16):
+            print("Metric value is out of the expected range.")
+            return None
+        
+        
+        return metric
+    
+    
+    
+    
+    
+    
+    
     
     
     
