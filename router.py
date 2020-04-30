@@ -27,7 +27,6 @@ def kill_router(code):
 class Router:
     def __init__(self, router_id, input_ports, output_ports):
         """Initialises starting properties"""
-        self.adHeaderLength = 20
         self.ripMaxLength = 520
         self.router_id = router_id
         self.input_ports = input_ports
@@ -35,7 +34,9 @@ class Router:
         self.links = self.initialise_links()
         self.router_sockets = self.create_sockets()
         self.routing_table = RoutingTable()
-        self.neighbour_death_time = 30
+        self.unsolicited_delay = 10
+        self.garbage_collection_delay = 4 * self.unsolicited_delay
+        self.neighbour_death_delay = 6 * self.unsolicited_delay
         self.garbage_collection_time = float("inf")
         self.triggered_update = False
         self.unsolicited_time = None
@@ -91,7 +92,7 @@ class Router:
         Starts the garbage collection timer
         """
         if self.garbage_collection_time == float("inf"):
-            self.garbage_collection_time = time() + 20
+            self.garbage_collection_time = time() + self.garbage_collection_delay
 
     def check_neighbour_alive(self):
         """
@@ -101,7 +102,7 @@ class Router:
         for key in self.links.keys():
             if len(self.links[key]) > 0 and self.links[key][2] != "d":
                 current_time = int(time())
-                if current_time - self.links[key][2] >= self.neighbour_death_time:
+                if current_time - self.links[key][2] >= self.neighbour_death_delay:
                     self.routing_table.update_dead_link(self.links[key][0])
                     neighbour_died = True
                     self.links[key][2] = "d"
@@ -180,7 +181,7 @@ class Router:
 
     def update_unsolicited(self):
         """This method updates the timers for unsolicited messages"""
-        self.unsolicited_time = time() + 10 * uniform(0.8, 1.2)
+        self.unsolicited_time = time() + self.unsolicited_delay * uniform(0.8, 1.2)
 
     def can_send_triggered(self):
         """Checks if the router can send a triggered message"""
@@ -231,8 +232,6 @@ def main():
     router_id, input_ports, output_ports = router_config(filename)
     router = Router(router_id, input_ports, output_ports)
 
-    # First message to initialise with neighbours
-    router.send_message()
     while True:
         ready_sockets, _, _ = select(router.router_sockets, [], [], router.select_wait_time())
         # Process any sockets with received RIP messages
