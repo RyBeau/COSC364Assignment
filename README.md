@@ -6,7 +6,8 @@ COSC364 Rip routing assignment
   <li>Router</li>
   <li>Routing Table</li>
   <li>Response</li>
-  <li>Timer</li>
+  <li>Config</li>
+  <li>Timer (Not in use)</li>
 </ul
 
 <h3>Running</h3>
