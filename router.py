@@ -16,8 +16,8 @@ from select import *
 from time import *
 
 
-
 LOCALHOST = gethostname()
+
 
 def kill_router(code):
     """This procedure shuts down the router/ ends the program"""
@@ -229,35 +229,39 @@ def process_received(router, socket):
             router.update_triggered()
 
 
-
 def main():
     # Initialisation of classes
     filename = argv[1]
-    router_id, input_ports, output_ports = router_config(filename)
-    router = Router(router_id, input_ports, output_ports)
+    try:
+        router_id, input_ports, output_ports = router_config(filename)
+    except Exception as e:
+        print(e)
+        kill_router(1)
+    else:
+        router = Router(router_id, input_ports, output_ports)
 
-    while True:
-        ready_sockets, _, _ = select(router.router_sockets, [], [], router.select_wait_time())
-        # Process any sockets with received RIP messages
-        if len(ready_sockets) > 0:
-            for ready_socket in ready_sockets:
-                process_received(router, ready_socket)
-        # Check if any links are dead
-        router.check_neighbour_alive()
-        # Check garbage collection
-        router.check_garbage_collection()
+        while True:
+            ready_sockets, _, _ = select(router.router_sockets, [], [], router.select_wait_time())
+            # Process any sockets with received RIP messages
+            if len(ready_sockets) > 0:
+                for ready_socket in ready_sockets:
+                    process_received(router, ready_socket)
+            # Check if any links are dead
+            router.check_neighbour_alive()
+            # Check garbage collection
+            router.check_garbage_collection()
 
-        if router.can_send_unsolicited():
-            if router.triggered_update:
-                print("Sent Unsolicited Instead of Triggered\n")
-            else:
-                print("Sent Unsolicited\n")
-            router.send_message()
-            router.update_unsolicited()
+            if router.can_send_unsolicited():
+                if router.triggered_update:
+                    print("Sent Unsolicited Instead of Triggered\n")
+                else:
+                    print("Sent Unsolicited\n")
+                router.send_message()
+                router.update_unsolicited()
 
-        elif router.can_send_triggered():
-            router.send_message()
-            router.update_unsolicited()
-            print("Sent Triggered\n")
+            elif router.can_send_triggered():
+                router.send_message()
+                router.update_unsolicited()
+                print("Sent Triggered\n")
 
 main()
