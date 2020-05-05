@@ -218,14 +218,15 @@ def process_received(router, socket):
     response_decode = ResponseReceive()
     message, address = router.get_message(router.router_sockets.index(socket))
     advertising_router_id, rip_entries = response_decode.readResponse(message)
-    recv_sock_port = socket.getsockname()[1]
-    if len(router.links[recv_sock_port]) == 0:
-        router.add_link(recv_sock_port, advertising_router_id, address[1])
-    route_dead = router.update_routing_table(rip_entries, advertising_router_id, address[1])
-    router.update_last_heard(recv_sock_port)
-    if route_dead:
-        router.start_garbage_timer()
-        router.update_triggered()
+    if advertising_router_id is not None:
+        recv_sock_port = socket.getsockname()[1]
+        if len(router.links[recv_sock_port]) == 0:
+            router.add_link(recv_sock_port, advertising_router_id, address[1])
+        route_dead = router.update_routing_table(rip_entries, advertising_router_id, address[1])
+        router.update_last_heard(recv_sock_port)
+        if route_dead:
+            router.start_garbage_timer()
+            router.update_triggered()
 
 
 
