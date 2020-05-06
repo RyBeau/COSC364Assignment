@@ -68,6 +68,9 @@ def convert_output(param_output_ports, input_ports):
             port_tuple = tuple([router_port, router_metric, router_id])
             port_list.append(port_tuple)
 
+        if len(port_list) != len(input_ports):
+            raise RouterException("There are not the same number of input ports and output ports")
+
         return port_list
     except RouterException:
         raise
