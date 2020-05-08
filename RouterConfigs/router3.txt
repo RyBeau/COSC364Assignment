@@ -6,3 +6,5 @@ input-ports 4001, 4002
 
 #output port - format a-b-c, a = port, b = metric, c = router id
 output-ports 3002-3-2, 5001-4-4
+
+timer 10
