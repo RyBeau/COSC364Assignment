@@ -1,6 +1,6 @@
 from CustomExceptions import *
 
-CONFIG_FORMAT = "format should match:\n{Router_id}\ninput ports {input port}, {input port},...\noutput ports {output port}-{metric}-{id},..."
+CONFIG_FORMAT = "format should match:\n{Router_id}\ninput ports {input port}, {input port},...\noutput ports {output port}-{metric}-{id},...\ntimer {unsolicited timer value}"
 
 # convert id from string to int
 def convert_id(param_id):
@@ -78,6 +78,13 @@ def convert_output(param_output_ports, input_ports):
         raise RouterException("Could not convert output ports\n" + CONFIG_FORMAT)
 
 
+def convert_timer(timer):
+    try:
+        return int(timer)
+    except Exception:
+        raise RouterException("Invalid value for an unsolicited update in config file")
+
+
 # Main
 def router_config(filename):
     try:
@@ -110,12 +117,12 @@ def router_config(filename):
             router_id = convert_id(filtered_lines[0])
             input_ports = convert_input(filtered_lines[1][12:].split(", "))
             output_ports = convert_output(filtered_lines[2][13:].split(", "), input_ports)
-
+            timer = convert_timer(filtered_lines[3][6:])
         except RouterException:
             raise
         except Exception:
             raise RouterException("Error with config file " + CONFIG_FORMAT)
         else:
-            return router_id, input_ports, output_ports
+            return router_id, input_ports, output_ports, timer
 
 # router_config("router1.txt")

@@ -25,7 +25,7 @@ def kill_router(code):
 
 
 class Router:
-    def __init__(self, router_id, input_ports, output_ports):
+    def __init__(self, router_id, input_ports, output_ports, timer):
         """Initialises starting properties"""
         self.ripMaxLength = 520
         self.router_id = router_id
@@ -34,7 +34,7 @@ class Router:
         self.links = self.initialise_links()
         self.router_sockets = self.create_sockets()
         self.routing_table = RoutingTable()
-        self.unsolicited_delay = 10
+        self.unsolicited_delay = timer
         self.garbage_collection_delay = 4 * self.unsolicited_delay
         self.neighbour_death_delay = 6 * self.unsolicited_delay
         self.garbage_collection_time = float("inf")
@@ -233,12 +233,12 @@ def main():
     # Initialisation of classes
     filename = argv[1]
     try:
-        router_id, input_ports, output_ports = router_config(filename)
+        router_id, input_ports, output_ports, timer = router_config(filename)
     except Exception as e:
         print(e)
         kill_router(1)
     else:
-        router = Router(router_id, input_ports, output_ports)
+        router = Router(router_id, input_ports, output_ports, timer)
 
         while True:
             ready_sockets, _, _ = select(router.router_sockets, [], [], router.select_wait_time())
