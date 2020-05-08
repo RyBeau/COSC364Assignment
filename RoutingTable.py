@@ -4,6 +4,10 @@ This is the RoutingTable class for the COSC364 Assignment.
 
 
 class RoutingTable:
+    """
+    This class is the routing table, it is responsible for storing and maintaining the routes the router knows
+    """
+
     def __init__(self):
         """Initialise starting properties
         Table entry format (destination_id, next_hop_routerID, metric, flag)

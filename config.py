@@ -77,7 +77,7 @@ def convert_output(param_output_ports, input_ports):
     except Exception:
         raise RouterException("Could not convert output ports\n" + CONFIG_FORMAT)
 
-
+# Converts the timer value in the file to an integer
 def convert_timer(timer):
     try:
         if 5 <= int(timer) <= 30:
@@ -90,7 +90,7 @@ def convert_timer(timer):
         raise RouterException("Invalid value for an unsolicited update in config file")
 
 
-# Main
+# Parses the given config file return router configuration information
 def router_config(filename):
     try:
         file = open(filename, 'r')

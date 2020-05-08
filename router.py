@@ -6,8 +6,6 @@ Author: Ryan Beaumont
 from RoutingTable import *
 from config import *
 from Response import *
-import Timer
-from multiprocessing.pool import ThreadPool
 from socket import *
 from os import _exit
 from sys import argv
@@ -25,6 +23,9 @@ def kill_router(code):
 
 
 class Router:
+    """
+    This is the main controlling class. It is the router itself
+    """
     def __init__(self, router_id, input_ports, output_ports, timer):
         """Initialises starting properties"""
         self.ripMaxLength = 520
@@ -230,6 +231,9 @@ def process_received(router, socket):
 
 
 def main():
+    """
+    This is the mainloop for the program
+    """
     # Initialisation of classes
     filename = argv[1]
     try:
