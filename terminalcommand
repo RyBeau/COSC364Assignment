@@ -1,0 +1,7 @@
+python3 router.py RouterConfigs/router1.txt
+python3 router.py RouterConfigs/router2.txt
+python3 router.py RouterConfigs/router3.txt
+python3 router.py RouterConfigs/router4.txt
+python3 router.py RouterConfigs/router5.txt
+python3 router.py RouterConfigs/router6.txt
+python3 router.py RouterConfigs/router7.txt
