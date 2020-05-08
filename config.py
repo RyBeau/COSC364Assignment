@@ -80,7 +80,12 @@ def convert_output(param_output_ports, input_ports):
 
 def convert_timer(timer):
     try:
-        return int(timer)
+        if 5 <= int(timer) <= 30:
+            return int(timer)
+        else:
+            raise RouterException("Unsolicited timer value must be from 5 to 30")
+    except RouterException:
+        raise
     except Exception:
         raise RouterException("Invalid value for an unsolicited update in config file")
 
