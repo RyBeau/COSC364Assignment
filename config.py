@@ -53,8 +53,8 @@ def convert_output(param_output_ports, input_ports):
             if not (1024 <= router_port <= 64000):
                 raise RouterException("Output port out of range must be between 1024 and 64000 inclusive")
 
-            if router_metric < 0 or router_metric > 16:
-                raise RouterException("Route metric out of range must be between 1 and 16 inclusive")
+            if router_metric < 0 or router_metric > 15:
+                raise RouterException("Route metric out of range must be between 1 and 15 inclusive")
 
             if not (1 <= router_id <= 64000):
                 raise RouterException("Neighbour router ID out of range must be between 1 and 64000 inclusive")
