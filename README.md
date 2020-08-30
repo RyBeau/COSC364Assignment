@@ -1,5 +1,5 @@
 # COSC364Assignment
-COSC364 Rip routing assignment
+COSC364 Routing Information Protocol (RIP) assignment. For this assignment we were required to create an implementation of a RIP router in Python. The router reads configuration information detailing its neighbours and their link costs. It then begins send RIP response packets to each of its neighbours from which they build up the a routing table of optimal paths to all reachable routers in the overall topology. Routers respond to failures of neighbours allowing the topology to adapt to changes. 
 
 <H3>Classes</h3>
 <ul>
